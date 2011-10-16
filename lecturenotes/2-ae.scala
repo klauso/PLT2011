@@ -1,6 +1,3 @@
-// $Rev: 3058 $
-// $LastChangedDate: 2011-10-16 17:27:43 +0200 (So, 16 Okt 2011) $.
-
 /* 
  * Introduction to Scala and interpreters
  ****************************************
@@ -146,7 +143,7 @@ assert(countNums(test) == 1)
 
 /* We will now learn a different "data-less" representation of expressions inspired by
  * the visitor infrastructure above. This representation is called "Church Encoding"
- * or sometimes, when used in statically typed languages, "Böhm-Berarducci Encoding".
+ * or sometimes, when used in statically typed languages, "Bï¿½hm-Berarducci Encoding".
  *
  * The idea of this representation is that the expression tree is a kind of intermediate
  * result that we can skip and go straight to the result of applying a visitor. That is,
