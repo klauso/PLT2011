@@ -2,9 +2,6 @@
  * Introduction to Scala and interpreters
  ****************************************
  
- This version number of this document is $Rev: 3058 $ and 
- it was last changed on $LastChangedDate: 2011-10-16 17:27:43 +0200 (So, 16 Okt 2011) $.
-
  This file can be executed with the scala interactive interpreter.
  Invoke with 'scala ae.scala'
  */
