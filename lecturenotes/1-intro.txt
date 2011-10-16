@@ -1,6 +1,3 @@
-$Rev: 3058 $
-$LastChangedDate: 2011-10-16 17:27:43 +0200 (So, 16 Okt 2011) $.
-
 Introduction
 ============
 
