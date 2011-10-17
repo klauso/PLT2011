@@ -192,3 +192,8 @@ val test2 : ExpC = add(mul('x,2),add('y,'y))
 assert(eval3(test2, testEnv) == 14)
 
 assert(test2(countVisitor) == 1)
+
+/* As a voluntary but useful exercise, I recommend to start with a blank source file 
+ * and reconstruct the definitions in this file from memory (or rather, derive them
+ * from your understanding of the subject matter). 
+ */
