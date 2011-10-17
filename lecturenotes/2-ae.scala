@@ -1,9 +1,9 @@
-/* 
+/*
  * Introduction to Scala and interpreters
  ****************************************
  
  This file can be executed with the scala interactive interpreter.
- Invoke with 'scala ae.scala'
+ Invoke 'scala' in the directory this file is in and then ':load 2-ae.scala'
  */
 
  
@@ -100,14 +100,25 @@ assert( eval(test, testEnv) == 14)
  * Internal visitors also correspond to a "bottom-up" traversal of the syntax tree. */ 
 
 case class Visitor[T](num: Int => T, add: (T,T)=>T, mul: (T,T)=>T, id: Symbol=>T)
+// an alternative to this design is to define num, add, mul, id as abstract methods
+// and then create concrete visitors by subclassing or trait composition.
+
 
 /* The fold function itself applies a visitor to an expression. 
  * Note that the recursion is performed in the fold function, hence
  * all visitors are not recursive.
- *
+ 
  * Also note that this design enforces that all algorithms specified via this visitor
  * interfaces are compositional by design. This means that the recursion structure of
- * the algorithm corresponds to the recursion structure of the expression. */
+ * the algorithm corresponds to the recursion structure of the expression. Put in another
+ * way, it means that the semantics (in terms of the meta-language) of a composite 
+ * expression is determined by the semantics of the subexpressions; the syntax of the
+ * subexpressions is irrelevant.
+
+ * Compositional specifications are particularly nice because they enable "equational
+ * reasoning": Subexpressions can be replaced by other subexpressions with the same 
+ * semantics without changing the semantics of the whole.
+ */
  
 def foldExp[T](v: Visitor[T], e: Exp) : T = {
   e match {
