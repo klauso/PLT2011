@@ -134,7 +134,7 @@ val evalVisitor = Visitor[Env=>Int]( env=>_, (a,b)=>env=>a(env)+b(env), (a,b)=>e
 
 /* We can of course also restore the original interface of eval */
 
-def eval2(e: Exp) = foldExp[Env=>Int](evalVisitor,e)
+def eval2(e: Exp) = foldExp(evalVisitor,e)
 
 /* Let's test whether it works. */
 
@@ -145,7 +145,7 @@ assert( eval2(test)(testEnv) == 14)
 val countVisitor = Visitor[Int]( _=>1, _+_, _+_, _=>0) 
 val printVisitor = Visitor[String](_.n.toString, "("+_+"+"+_+")",_+"*"+_,_.x.toString)
 
-def countNums(e: Exp) = foldExp[Int](countVisitor,e) 
+def countNums(e: Exp) = foldExp(countVisitor,e) 
 
 assert(countNums(test) == 1)
 
