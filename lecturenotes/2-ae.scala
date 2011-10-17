@@ -151,10 +151,10 @@ assert(countNums(test) == 1)
 
 /* We will now learn a different "data-less" representation of expressions inspired by
  * the visitor infrastructure above. This representation is called "Church Encoding"
- * or sometimes, when used in statically typed languages, "B�hm-Berarducci Encoding".
+ * or sometimes, when used in statically typed languages, "Böhm-Berarducci Encoding".
  *
  * The idea of this representation is that the expression tree is a kind of intermediate
- * result that we can skip and go straight to the result of applying a visitor. That is,
+ * result that we can skip and go staright to the result of applying a visitor. That is,
  * we represent an expression by a function that will call the "right" functions of a visitor.
  *
  * An expression is represented by a function that, for any type T, applies a Visitor[T] to
@@ -166,7 +166,7 @@ assert(countNums(test) == 1)
  * 
  * Later in the course, or if you are a Haskell affectionado, you may recognize that this is
  * an encoding of the type "forall T.Visitor[T] => T", which means that functions accepting or 
- * returning ExpC values are so-called "rank-2 types".
+ * returning ExpC values have so-called "rank-2 types".
  */
 
 abstract class ExpC { def apply[T](v: Visitor[T]) : T } // we call this method "apply" because then 
