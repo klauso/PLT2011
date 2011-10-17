@@ -154,7 +154,7 @@ assert(countNums(test) == 1)
  * or sometimes, when used in statically typed languages, "Böhm-Berarducci Encoding".
  *
  * The idea of this representation is that the expression tree is a kind of intermediate
- * result that we can skip and go staright to the result of applying a visitor. That is,
+ * result that we can skip and go straight to the result of applying a visitor. That is,
  * we represent an expression by a function that will call the "right" functions of a visitor.
  *
  * An expression is represented by a function that, for any type T, applies a Visitor[T] to
