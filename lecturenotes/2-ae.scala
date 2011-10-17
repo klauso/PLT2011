@@ -134,11 +134,11 @@ val evalVisitor = Visitor[Env=>Int]( env=>_, (a,b)=>env=>a(env)+b(env), (a,b)=>e
 
 /* We can of course also restore the original interface of eval */
 
-def eval2(e: Exp) = foldExp(evalVisitor,e)
+def eval2(e: Exp, env: Env) = foldExp(evalVisitor,e)(env) 
 
 /* Let's test whether it works. */
 
-assert( eval2(test)(testEnv) == 14)
+assert( eval2(test,testEnv) == 14)
 
 /* We can of course also apply other algorithms using visitors, such as 
  * counting the number of "Num" literals, or printing to a string: */
