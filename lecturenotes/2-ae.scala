@@ -167,8 +167,9 @@ assert(countNums(test) == 1)
  * a Visitor[T] to itself and thereby produces a T.
  * 
  * The "for any type T" from the previous sentence means that ordinary Scala functions cannot
- * be used for this purpose. Rather, we encode it as an abstract class with an "apply" function
- * that takes the type parameter.
+ * be used for this purpose, because all type parameters of Scala functions have to be known 
+ * before a function can be passed as an argument. Rather, we encode it as an abstract class 
+ * with an "apply" function that takes the type parameter.
  * 
  * Later in the course, or if you are a Haskell affectionado, you may recognize that this is
  * an encoding of the type "forall T.Visitor[T] => T", which means that functions accepting or 
