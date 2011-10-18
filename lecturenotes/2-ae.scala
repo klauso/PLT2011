@@ -161,7 +161,10 @@ assert(countNums(test) == 1)
  def foldForTest[T](v: Visitor[T]) : T = foldExp(v,test)  
 /* except that we want to skip the construction (in the definition of test) and subsequent 
  * deconstruction(in the pattern match of foldExp) of the data type and represent the expression
-*  directly by the corresponding sequence of calls to the visitor.
+ *  directly by the corresponding sequence of calls to the visitor.
+ *
+ * Recommended exercise: "Partially evaluate" foldForTest, that is, inline the definition of 
+ * foldExp and specialize it to the case e = test.
  *
  * Hence, an expression is represented by a function that, for any type T, applies 
  * a Visitor[T] to itself and thereby produces a T.
