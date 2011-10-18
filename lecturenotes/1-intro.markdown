@@ -77,7 +77,7 @@ Topics for class discussion:
 * Which programming languages do you know? Which features of these languages do you
   like or dislike, and why?
 * How can we evaluate programming languages?
-* Is the choice of programming language for a programming language significant?
+* Is the choice of programming language for a programming project significant?
 * Are interpreters a good way to capture the meaning of a PL? How do they compare
   to informal descriptions, formal specifications, and compilers?
 * How important is the syntax of a PL?
