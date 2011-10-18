@@ -156,9 +156,15 @@ assert(countNums(test) == 1)
  * The idea of this representation is that the expression tree is a kind of intermediate
  * result that we can skip and go straight to the result of applying a visitor. That is,
  * we represent an expression by a function that will call the "right" functions of a visitor.
+ * 
+ * For instance, we want to represent the expression "test" by the function: */ 
+ def foldForTest[T](v: Visitor[T]) : T = foldExp(v,test)  
+/* except that we want to skip the construction (in the definition of test) and subsequent 
+ * deconstruction(in the pattern match of foldExp) of the data type and represent the expression
+*  directly by the corresponding sequence of calls to the visitor.
  *
- * An expression is represented by a function that, for any type T, applies a Visitor[T] to
- * itself and thereby produces a T.
+ * Hence, an expression is represented by a function that, for any type T, applies 
+ * a Visitor[T] to itself and thereby produces a T.
  * 
  * The "for any type T" from the previous sentence means that ordinary Scala functions cannot
  * be used for this purpose. Rather, we encode it as an abstract class with an "apply" function
