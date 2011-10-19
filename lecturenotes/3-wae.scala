@@ -61,7 +61,7 @@ def makeEval(subst: (Exp,Symbol,Exp)=>Exp) : Exp=>Int = {
     case Id(x) => sys.error("unbound variable: "+x)
     case Add(l,r) => eval(l) + eval(r)
     case Mul(l,r) => eval(l) * eval(r)
-    case With(x, xdef, body) => eval(subst(body,x,xdef))
+    case With(x, xdef, body) => eval(subst(body,x,Num(eval(xdef)))) // take the int and wrap it into a Num
   }
   eval
 }
@@ -245,4 +245,36 @@ assert(eval5(test3) == 8)
 assert(eval5(test4) == 10) 
 
 assert(eval5(test5) == 5) // Success!
+
+/* Exercise: Instead of evaluating xdef before substituting it into the body of the "with" expression, we could also
+ * take the expression unevaluated, as is. That is, makeEval could also look like this: */
+
+def makeEval2(subst: (Exp,Symbol,Exp)=>Exp) : Exp=>Int = {
+  def eval(e: Exp) : Int = e match {
+    case Num(n) => n
+    case Id(x) => sys.error("unbound variable: "+x)
+    case Add(l,r) => eval(l) + eval(r)
+    case Mul(l,r) => eval(l) * eval(r)
+    case With(x, xdef, body) => eval(subst(body,x,xdef))  // substituting the unevaluated xdef into body
+  }
+  eval
+}
+
+def eval6 = makeEval2(subst5)
+
+/* Intuitively, eval5 and eval6 should produce the same results. This seems to be confirmed by our test cases. */
+
+assert(eval6(test) == eval5(test))
+assert(eval6(test2) == eval5(test2))
+assert(eval6(test3) == eval5(test3))
+assert(eval6(test4) == eval5(test4))
+assert(eval6(test5) == eval5(test5))
+
+/* Find an expression where eval5 produces a different result than eval6. 
+ * What is the reason? What needs to be fixed? Fix it! (this is non-trivial)
+ *
+ * Hint: The correctness of our substitution function depends on an important invariant of its "v" argument that
+ * we did not discuss explicitly yet.
+ */
+ 
  
