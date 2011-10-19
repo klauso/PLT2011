@@ -274,7 +274,7 @@ assert(eval6(test5) == eval5(test5))
  * What is the reason? What needs to be fixed? Fix it! (this is non-trivial)
  *
  * Hint: The correctness of our substitution function depends on an important invariant of its "v" argument that
- * we did not discuss explicitly yet.
+ * we did not discuss explicitly yet. With eval6 you can construct examples that violate this invariant.
  */
  
  
