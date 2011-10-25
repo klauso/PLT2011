@@ -20,12 +20,14 @@ propose corrections as a github pull request.
  
  * In this variant of the language, called WAE, we introduce such a binder
  * called "with" with which we can give an expression a name that can be used
- * in the body of the "with" expression. We study this WAE language to better
- * understand what names mean in programming languages, and how they can be
- * implemented.
+ * in the body of the "with" expression. This intuition is captured in the 
+ * definition of the "With" case class below, which extends our previous 
+ * language. 
  
- * This intuition is captured in the definition of the "With" case class below,
- * which extends our previous language. */
+ * We study this WAE language to better understand what names mean in 
+ * programming languages, and how they can be implemented.
+ 
+ */
 
 sealed abstract class Exp 
 case class Num(n: Int) extends Exp
@@ -72,6 +74,16 @@ val test = With('x, 5, Add('x,'x))
  * 
  * before proceeding. That is, all occurrences of x have been
  * replaced by 5.
+ 
+ * Note that these two programs -- before and after the substitution --
+ * are certainly not *equal*: They look quite different. However,
+ * they are *equivalent* in the sense that when evaluated, they
+ * will produce the same number. Such transformations between 
+ * different but somehow equivalent programs are an important
+ * tool for the study of programs, and of programming languages.
+ * Often, if we know which programs behave identically, we understand
+ * better how programs behave in general. We will see more examples
+ * of this in this lecture.
  
  * Hence, the implementation of the "With" case of our interpreter should
  * be something like:
