@@ -172,3 +172,29 @@ val sum1234 = visit1234d(sumVisitor)
 val product1234 = visit1234d(productVisitor)
 
 /* But what about other lists? */
+
+abstract class ListC {
+  def apply[T](visitor : ListVisitor[T]) : T
+}
+
+val list1234 = new ListC {
+  def apply[T](visitor : ListVisitor[T]) : T =
+    visitor.cons(1, visitor.cons(2, visitor.cons(3, visitor.cons(4, visitor.nil))))
+}
+
+def nilC = new ListC {
+  def apply[T](visitor : ListVisitor[T]) : T =
+    visitor.nil
+}
+
+def consC(head : Int, tail : ListC) = new ListC {
+  def apply[T](visitor : ListVisitor[T]) : T =
+    visitor.cons(head, tail(visitor))
+}
+
+val list357 = consC(3, consC(5, consC(7, nilC)))
+
+val test6 = list357(productVisitor)
+
+
+
