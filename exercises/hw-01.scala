@@ -36,15 +36,15 @@ def variables1(e : Exp) : Set[Symbol] = e match { ... }
 
 val variablesVisitor = Visitor[Set[Symbol]](..., ..., ..., ...)
 
-def variables2(e : Exp) : Set[Symbol] = foldExp(e, variablesVisitor)
+def variables2(e : Exp) : Set[Symbol] = foldExp(variablesVisitor, e)
 
 /* Some test cases, feel free to add more: */
 
-assert(variables1('x)) = Set('x)
-assert(variables1(Add('x, 'y)) = Set('x, 'y)
+assert(variables1('x) == Set('x))
+assert(variables1(Add('x, 'y)) == Set('x, 'y))
 
-assert(variables2('x)) = Set('x)
-assert(variables2(Add('x, 'y)) = Set('x, 'y)
+assert(variables2('x) == Set('x))
+assert(variables2(Add('x, 'y)) == Set('x, 'y))
 
 /*
   Hint about sets in Scala:
@@ -131,8 +131,8 @@ c) Expressions in de-Bruijn form can be represented in Scala with
 
 sealed abstract class ExpDB 
 case class NumDB(n: Int) extends ExpDB
-case class AddDB(lhs: ExpDB, rhs: Exp) extends ExpDB
-case class MulDB(lhs: ExpDB, rhs: Exp) extends ExpDB
+case class AddDB(lhs: ExpDB, rhs: ExpDB) extends ExpDB
+case class MulDB(lhs: ExpDB, rhs: ExpDB) extends ExpDB
 case class IdDB(index : Int) extends ExpDB 
 case class WithDB(xdef: ExpDB, body: ExpDB) extends ExpDB
 
@@ -160,6 +160,6 @@ def convert(wae : Exp) : ExpDB = {
 
 assert(
   convert(With('x, 11, Add(With('y, 2, Mul('x, 'y)), With('x, 5, Mul(4, 'x))))) ==
-  WithDB(11, AddDB(WithDB(2, MulDB(IdDB(1), IdDB(0))), With(5, Mul(4, IdDB(0))))))
+  WithDB(11, AddDB(WithDB(2, MulDB(IdDB(1), IdDB(0))), WithDB(5, MulDB(4, IdDB(0))))))
 
 
