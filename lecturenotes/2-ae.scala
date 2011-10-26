@@ -207,3 +207,12 @@ assert(test2(countVisitor) == 1)
  * and reconstruct the definitions in this file from memory (or rather, derive them
  * from your understanding of the subject matter). 
  */
+ 
+/* Further reading: 
+ * - about the basics of interpreter design: PLAI Section 1+2
+ * - about internal visitors in Scala see 
+ *     Bruno C. d. S. Oliveira, Meng Wang, Jeremy Gibbons: 
+ *     The visitor pattern as a reusable, generic, type-safe component. 
+ *     OOPSLA 2008: 439-456
+ *     online at http://www.cs.ox.ac.uk/jeremy.gibbons/publications/visitor.pdf
+ */ 
