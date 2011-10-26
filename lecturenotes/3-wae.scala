@@ -1,8 +1,8 @@
 /*
 These are lecture notes for the "Programming Languages and Types" at the University of Marburg
 
-loosely based on "Programming Languages: Application and Interpretation" by
-Shriram Krishnamurthi
+loosely based on Sec. 3 of the book 
+"Programming Languages: Application and Interpretation" by Shriram Krishnamurthi
 
 Please send comments or errors in these notes via email to Klaus Ostermann.
 My email address can be found on my webpage. Alternatively, you can also 
