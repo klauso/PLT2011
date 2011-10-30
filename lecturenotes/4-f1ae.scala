@@ -43,7 +43,7 @@ case class Call(f: Symbol, args: List[Exp]) extends Exp // functions are called 
 
 /* A function has a number of formal args and a body. A first-order function also
  * has a name. To make the invariant that there can only be one function for each
- * name explicit, we store the same in the form of a map from function names to FunDefs: */
+ * name explicit, we store functions in the form of a map from function names to FunDefs: */
 
 case class FunDef(args: List[Symbol], body: Exp) 
 type Funs = Map[Symbol,FunDef]
