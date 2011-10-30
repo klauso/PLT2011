@@ -1,8 +1,8 @@
 /*
 These are lecture notes for the "Programming Languages and Types" at the University of Marburg
 
-loosely based on "Programming Languages: Application and Interpretation" by
-Shriram Krishnamurthi
+loosely based on Sec. 3 of the book 
+"Programming Languages: Application and Interpretation" by Shriram Krishnamurthi
 
 Please send comments or errors in these notes via email to Klaus Ostermann.
 My email address can be found on my webpage. Alternatively, you can also 
@@ -20,10 +20,14 @@ propose corrections as a github pull request.
  
  * In this variant of the language, called WAE, we introduce such a binder
  * called "with" with which we can give an expression a name that can be used
- * in the body of the "with" expression.
+ * in the body of the "with" expression. This intuition is captured in the 
+ * definition of the "With" case class below, which extends our previous 
+ * language. 
  
- * This intuition is captured in the definition of the "With" case class below,
- * which extends our previous language. */
+ * We study this WAE language to better understand what names mean in 
+ * programming languages, and how they can be implemented.
+ 
+ */
 
 sealed abstract class Exp 
 case class Num(n: Int) extends Exp
@@ -39,16 +43,55 @@ implicit def sym2exp(x: Symbol) = Id(x)
 /* A first example program in WAE. */
 val test = With('x, 5, Add('x,'x))
 
+/* Note that we deal with *two* languages here:
+   
+   (1) This a Scala file with Scala code.
+   (2) Most of the functions work on programs written in the WAE language.
+   
+   Most of the time, we concentrate on WAE, but sometimes, we also
+   talk about Scala.
+   
+   We have not defined a concrete syntax for WAE, but it is a
+   real language nevertheless. We sometimes use some made-up
+   syntax for examples on the blackboard or in comments.
+ */
+   
 /* 
  * Instead of dealing with identifiers as external entities as in AE, 
  * identifiers can now be defined within the language. This justifies
  * a new treatment of identifiers. We will explain them in terms of
  * _substitution_, a notion well-known informally from Gymnasium algebra.
  
+ * The idea is the following: The interpreter transforms the term
+ *
+ *   with (x = 5) {
+ *     x + x
+ *   }
+ * 
+ * into
+ *   
+ *   5 + 5
+ * 
+ * before proceeding. That is, all occurrences of x have been
+ * replaced by 5.
+ 
+ * Note that these two programs -- before and after the substitution --
+ * are certainly not *equal*: They look quite different. However,
+ * they are *equivalent* in the sense that when evaluated, they
+ * will produce the same number. Such transformations between 
+ * different but somehow equivalent programs are an important
+ * tool for the study of programs, and of programming languages.
+ * Often, if we know which programs behave identically, we understand
+ * better how programs behave in general. We will see more examples
+ * of this in this lecture.
+ 
  * Hence, the implementation of the "With" case of our interpreter should
  * be something like:
+ * 
  *     case With(x, xdef, body) => eval(subst(body,x,xdef))
- * for a function subst with signature      
+ * 
+ * for a function subst with signature
+ * 
  *     subst: (Exp,Symbol,Exp)=>Exp)
  *
  * Since we want to experiment with different versions of substitution, we
@@ -106,7 +149,11 @@ def makeEval(subst: (Exp,Symbol,Exp)=>Exp) : Exp=>Int = {
 
  * Deﬁnition (Free Instance) An identiﬁer not contained in the scope of any binding instance of its name is
  * said to be free.
-
+ 
+ * Examples: In WAE, the symbol in Id('x) is a bound or free instance, and the
+ * symbol in With('x, ..., ...) is a binding instance. The scope of this
+ * binding instance is the third sub-term of With.
+ 
  * OK, with this new terminology, we can make another take at substitution:
  
  * Deﬁnition (Substitution, take 2) To substitute identiﬁer i in e with expression v, replace all identiﬁers in
@@ -116,11 +163,16 @@ def makeEval(subst: (Exp,Symbol,Exp)=>Exp) : Exp=>Int = {
  */
 val subst2 : (Exp,Symbol,Exp) => Exp = (e,i,v) => e match {
     case Num(n) => e
+    
+    // Bound or free instance => substitute if names match
     case Id(x) => if (x == i) v else e
+    
     case Add(l,r) => Add( subst2(l,i,v), subst2(r,i,v))
     case Mul(l,r) => Mul( subst2(l,i,v), subst2(r,i,v))
+    
+    // binding instance => do not substitute
     case With(x,xdef,body) => With( x,
-                                    xdef,
+                                    subst2(xdef,i,v),
                                     subst2(body,i,v))
 }
 
@@ -154,6 +206,7 @@ val test3 = With('x, 5, Add('x, With('x, 3,'x))) // another test
     case Mul(l,r) => Mul( subst3(l,i,v), subst3(r,i,v))
     case With(x,xdef,body) => With( x,
                                     subst3(xdef,i,v),
+                                    // do not substitute in nested scopes
                                     body)
 }
 
@@ -196,6 +249,7 @@ val test4 = With('x, 5, Add('x, With('y, 3,'x)))
     case Id(x) => if (x == i) v else e
     case Add(l,r) => Add( subst4(l,i,v), subst4(r,i,v))
     case Mul(l,r) => Mul( subst4(l,i,v), subst4(r,i,v))
+    // do not substitute when shadowed
     case With(x,xdef,body) => if (x == i) e 
                                  else With(x,
                                            subst4(xdef,i,v),
@@ -229,6 +283,7 @@ val test5 = With('x, 5, With('x, 'x, 'x))
     case Id(x) => if (x == i) v else e
     case Add(l,r) => Add( subst4(l,i,v), subst4(r,i,v))
     case Mul(l,r) => Mul( subst4(l,i,v), subst4(r,i,v))
+    // handle shadowing correctly
     case With(x,xdef,body) => With(x,
                                    subst4(xdef,i,v),
                                    if (x == i) body else subst4(body,i,v))
@@ -278,3 +333,15 @@ assert(eval6(test5) == eval5(test5))
  */
  
  
+ 
+ 
+ /* SUMMARY:
+  *
+  *  (1) Substitution can be used to understand the meaning of
+  *      names in programming languages.
+  *
+  *  (2) Correct implementations of substitution need to handle
+  *      free, bound, and binding instances of names and their
+  *      scopes correctly.
+  */
+     
