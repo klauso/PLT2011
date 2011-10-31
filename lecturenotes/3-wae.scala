@@ -281,12 +281,12 @@ val test5 = With('x, 5, With('x, 'x, 'x))
  val subst5 : (Exp,Symbol,Exp) => Exp = (e,i,v) => e match {
     case Num(n) => e
     case Id(x) => if (x == i) v else e
-    case Add(l,r) => Add( subst4(l,i,v), subst4(r,i,v))
-    case Mul(l,r) => Mul( subst4(l,i,v), subst4(r,i,v))
+    case Add(l,r) => Add( subst5(l,i,v), subst5(r,i,v))
+    case Mul(l,r) => Mul( subst5(l,i,v), subst5(r,i,v))
     // handle shadowing correctly
     case With(x,xdef,body) => With(x,
-                                   subst4(xdef,i,v),
-                                   if (x == i) body else subst4(body,i,v))
+                                   subst5(xdef,i,v),
+                                   if (x == i) body else subst5(body,i,v))
 }
  
 def eval5 = makeEval(subst5)
