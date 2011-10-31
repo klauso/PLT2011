@@ -188,7 +188,7 @@ def eval(e: Exp) : Exp = e match {
 /* Let's test. 
  * Exercise: Add more interesting test cases.
  */
-val test = App( Fun('x,Add(Id('x),Num(5))), Num(7))
+val test = App( Fun('x,Add('x,5)), 7)
 
 assert( eval(test) == Num(12))
 
@@ -225,12 +225,13 @@ assert(eval(test2) == Num(8))
 /* but evalWithEnv0(test2,Map.empty) yields an "identifier not found: 'x" error. 
  * 
  * What can we do to fix this problem?
- * We could try to replace the second line in the "App" case by
- *     case Fun(f,body) => evalWithEnv0(body, env + (f -> evalWithEnv0(a,env)))
- * but this would again introduce dynamic scoping.
  *
  * The problem is that we have forgotten the deferred substitutions to be performed
  * in the body of the function.
+ *
+ * We could try to replace the second line in the "App" case by
+ *     case Fun(f,body) => evalWithEnv0(body, env + (f -> evalWithEnv0(a,env)))
+ * but this would again introduce dynamic scoping.
  *
  * Hence, when we evaluate a function, we do not only have to store the function, but also
  * the environment active when the function was defined. This pair of function and environment
