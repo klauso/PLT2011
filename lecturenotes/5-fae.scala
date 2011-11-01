@@ -82,7 +82,6 @@ def subst(e1 : Exp, x: Symbol, e2: Exp) : Exp = e1 match {
   case App(f,a) => App(subst(f,x,e2),subst(a,x,e2))
   case Fun(param,body) => 
     if (param == x) e1  else Fun(param, subst(body, x, e2))
-    }                            
 }
 
 /* Let's try whether subst produces reasonable results. */
@@ -192,6 +191,22 @@ def eval(e: Exp) : Exp = e match {
 val test = App( Fun('x,Add('x,5)), 7)
 
 assert( eval(test) == Num(12))
+
+/* FAE is a computationally (Turing)-complete language. For instance, we can define 
+ * a non-terminating program. This program is commonly called Omega */
+ 
+val omega = App(Fun('x,App('x,'x)), Fun('x,App('x,'x)))
+
+// try eval(omega) to crash the interpreter ;-)
+
+
+/* Omega can be extended to yield a fixed point combinator, which can be
+ * used to encode arbitrary recursive functions. We come back to this topic
+ * later. For now, we give - without further explanation - the definition of
+ * the so-called Y fixed point combinator. Don't try to understand how it works (yet). */
+ 
+val y = Fun('f, App(Fun('x, App('f, Fun('y, App(App('x,'x),'y)))),Fun('x, App('f, Fun('y, App(App('x,'x),'y))))))
+
 
 /* Let's now discuss what an environment-based version of this interpreter looks like.
  *
