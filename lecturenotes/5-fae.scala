@@ -10,8 +10,8 @@ be submitted as an "issue"; proposals for corrections/extensions/improvements ca
 be submitted as a "pull request". You can of course also send an email to Klaus Ostermann */
 
 
-/* F1-WAE, the language with first-order functions, lets us abstract over 
- * that involve numbers. But what if we want to abstract our patterns that
+/* F1-WAE, the language with first-order functions, lets us abstract over patterns
+ * that involve numbers. But what if we want to abstract over patterns that
  * involve functions, such as the "list fold" pattern, whose instantiations
  * include summing or multiplying a list of integers?
  * 
