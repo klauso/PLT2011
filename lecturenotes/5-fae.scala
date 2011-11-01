@@ -119,10 +119,10 @@ assert( subst(Fun('x, Add('x,'y)), 'x, 7) == Fun('x, Add('x,'y)))
  */
  
 def freshName(names: Set[Symbol], default: Symbol) : Symbol = {
-  if (! (names contains default)) return default
-  var last : Int = 0  
-  while (names contains Symbol(default.name+last.toString)) last = last+1
-  Symbol(default.name+last.toString)
+  var last : Int = 0
+  var freshName = default  
+  while (names contains freshName) { freshName = Symbol(default.name+last.toString); last += 1; }
+  freshName
 }
 
 assert( freshName(Set('y,'z),'x) == 'x)
