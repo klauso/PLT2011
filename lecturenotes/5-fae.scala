@@ -65,7 +65,8 @@ case class App (funExpr: Exp, argExpr: Exp) extends Exp
  * using App and Fun. For instance, "with x = 7 in x+3" can be encoded
  * (using Scala syntax) as " ((x) => x+3)(7)
  *
- * We make this idea explicit by giving a constructive translation:
+ * We make this idea explicit by giving a constructive translation. Such translations
+ * are also often called "desugaring".
  */
  
  // "with" would be a better name for this function, but it is reserved in Scala
@@ -173,16 +174,16 @@ assert( subst(Fun('x, Add('x,'y)), 'y, Add('x,5)) == Fun('x0,Add(Id('x0),Add(Id(
  * The remainder of the interpreter is unsurprising. 
  */
 def eval(e: Exp) : Exp = e match {
+  case Id(v) => sys.error("unbound identifier: "+v)
   case Add(l,r) => (eval(l), eval(r)) match {
                      case (Num(x),Num(y)) => Num(x+y)
                      case _ => sys.error("can only add numbers")
                     }
-  case Id(v) => sys.error("eval on id")
   case App(f,a) => eval(f) match {
      case Fun(x,body) => eval( subst(body,x, eval(a)))
      case _ => sys.error("can only apply functions")
   }
-  case _ => e
+  case _ => e // numbers and functions evaluate to themselves
 }
 
 /* Let's test. 
@@ -199,7 +200,6 @@ assert( eval(test) == Num(12))
 type Env0 = Map[Symbol, Exp]
 
 def evalWithEnv0(e: Exp, env: Env0) : Exp = e match {
-  case Num(n: Int) => e
   case Id(x) => env(x)
   case Add(l,r) => {
     (evalWithEnv0(l,env), evalWithEnv0(r,env)) match {
@@ -207,11 +207,11 @@ def evalWithEnv0(e: Exp, env: Env0) : Exp = e match {
       case _ => sys.error("can only add numbers")
     }
   }
-  case f@Fun(param,body) => f
   case App(f,a) => evalWithEnv0(f,env) match {
     case Fun(f,body) => evalWithEnv0(body, Map(f -> evalWithEnv0(a,env)))
     case _ => sys.error("can only apply functions")
   }
+  case _ => e // numbers and functions evaluate to themselves 
 }
 
 assert( evalWithEnv0(test, Map.empty) == Num(12))
@@ -235,7 +235,8 @@ assert(eval(test2) == Num(8))
  *
  * Hence, when we evaluate a function, we do not only have to store the function, but also
  * the environment active when the function was defined. This pair of function and environment
- * is called a _closure_.
+ * is called a _closure_. The environment stored in the closure is used when the function is
+ * eventually applied.
  *
  * Hint: If you cannot answer what a closure is and how it is used in the 
  * interpreter, you will be toast in the exam!
@@ -262,6 +263,7 @@ def evalWithEnv(e: Exp, env: Env) : Value = e match {
   }
   case f@Fun(param,body) => ClosureV(f, env)
   case App(f,a) => evalWithEnv(f,env) match {
+    // Use environment stored in closure to realize proper lexical scoping!
     case ClosureV(f,closureEnv) => evalWithEnv(f.body, closureEnv + (f.param -> evalWithEnv(a,env)))
     case _ => sys.error("can only apply functions")
   }
