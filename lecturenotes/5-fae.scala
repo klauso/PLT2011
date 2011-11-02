@@ -101,7 +101,7 @@ assert( subst(Fun('x, Add('x,'y)), 'x, 7) == Fun('x, Add('x,'y)))
  *
  * Note that this problem did not show up in earlier languages, because
  * there we only substituted variables by numbers, but not by expressions
- * that may contain free variables.
+ * that may contain free variables: The type of e2 was "Num" and not "Exp".
  *
  * Hence we are still not done with defining substitution.
  * But what is the desired result of the substitution above?
@@ -185,6 +185,22 @@ def eval(e: Exp) : Exp = e match {
   case _ => e // numbers and functions evaluate to themselves
 }
 
+/* We can also make the return type more precise to verify the invariant 
+ * that numbers and functions are the only values. */
+def eval2(e: Exp) : Either[Num,Fun] = e match {
+  case Id(v) => sys.error("unbound identifier: "+v)
+  case Add(l,r) => (eval2(l), eval2(r)) match {
+                     case (Left(Num(x)),Left(Num(y))) => Left(Num(x+y))
+                     case _ => sys.error("can only add numbers")
+                    }
+  case App(f,a) => eval2(f) match {
+     case Right(Fun(x,body)) => eval2( subst(body,x, eval(a)))
+     case _ => sys.error("can only apply functions")
+  }
+  case f@Fun(_,_) => Right(f) 
+  case n@Num(_) => Left(n)
+}
+
 /* Let's test. 
  * Exercise: Add more interesting test cases.
  */
@@ -199,14 +215,9 @@ val omega = App(Fun('x,App('x,'x)), Fun('x,App('x,'x)))
 
 // try eval(omega) to crash the interpreter ;-)
 
-
 /* Omega can be extended to yield a fixed point combinator, which can be
  * used to encode arbitrary recursive functions. We come back to this topic
- * later. For now, we give - without further explanation - the definition of
- * the so-called Y fixed point combinator. Don't try to understand how it works (yet). */
- 
-val y = Fun('f, App(Fun('x, App('f, Fun('y, App(App('x,'x),'y)))),Fun('x, App('f, Fun('y, App(App('x,'x),'y))))))
-
+ * later. 
 
 /* Let's now discuss what an environment-based version of this interpreter looks like.
  *
