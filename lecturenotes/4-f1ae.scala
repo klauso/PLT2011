@@ -49,7 +49,7 @@ case class FunDef(args: List[Symbol], body: Exp)
 type Funs = Map[Symbol,FunDef]
 
 /* The substitution for the new language is a straightforward extension of the former one. */
-def subst(e: Exp,i: Symbol,v: Exp) : Exp =  e match {
+def subst(e: Exp,i: Symbol,v: Num) : Exp =  e match {
     case Num(n) => e
     case Id(x) => if (x == i) v else e
     case Add(l,r) => Add( subst(l,i,v), subst(r,i,v))
@@ -106,7 +106,7 @@ val testProg = With('x, 1, With('y, 2, With('z, 3, Add('x,Add('y,'z)))))
 /* When considering the "With" case of the interpreter, the interpreter will
  * subsequently produce and evaluate the following intermediate expressions: */
 
- val testProgAfterOneStep     = With('y, 2, With('z, 3, Add(1,Add('y,'z))))
+val testProgAfterOneStep     = With('y, 2, With('z, 3, Add(1,Add('y,'z))))
 val testProgAfterTwoSteps    = With('z, 3, Add(1,Add(2,'z)))
 val testProgAfterThreeSteps  = Add(1,Add(2,3))
 
