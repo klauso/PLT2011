@@ -88,17 +88,21 @@ val test = With('x, 5, Add('x,'x))
  * Hence, the implementation of the "With" case of our interpreter should
  * be something like:
  * 
- *     case With(x, xdef, body) => eval(subst(body,x,xdef))
+ *     case With(x, xdef, body) => eval(subst(body,x,Num(eval(xdef))))
  * 
  * for a function subst with signature
  * 
- *     subst: (Exp,Symbol,Exp)=>Exp)
+ *     subst: (Exp,Symbol,Num)=>Exp)
+ *
+ * The type of the third parameter is "Num" instead of "Exp" because it 
+ * is more difficult to get substitution correct when arbitrary expressions
+ * can be inserted (accidential name capture problem, more about that later).
  *
  * Since we want to experiment with different versions of substitution, we
  * write the interpreter in such a way that we can parameterize it with
  * a substitution function:
  */
-def makeEval(subst: (Exp,Symbol,Exp)=>Exp) : Exp=>Int = {
+def makeEval(subst: (Exp,Symbol,Num)=>Exp) : Exp=>Int = {
   def eval(e: Exp) : Int = e match {
     case Num(n) => n
     case Id(x) => sys.error("unbound variable: "+x)
@@ -117,7 +121,7 @@ def makeEval(subst: (Exp,Symbol,Exp)=>Exp) : Exp=>Int = {
  
  /*
     
- val subst1 : (Exp,Symbol,Exp) => Exp = (e,i,v) => e match {
+ val subst1 : (Exp,Symbol,Num) => Exp = (e,i,v) => e match {
     case Num(n) => e
     case Id(x) => if (x == i) v else e
     case Add(l,r) => Add( subst1(l,i,v), subst1(r,i,v))
@@ -161,7 +165,7 @@ def makeEval(subst: (Exp,Symbol,Exp)=>Exp) : Exp=>Int = {
  
  * Here is the formalization of this definition.
  */
-val subst2 : (Exp,Symbol,Exp) => Exp = (e,i,v) => e match {
+val subst2 : (Exp,Symbol,Num) => Exp = (e,i,v) => e match {
     case Num(n) => e
     
     // Bound or free instance => substitute if names match
@@ -199,7 +203,7 @@ val test3 = With('x, 5, Add('x, With('x, 3,'x))) // another test
  * identiﬁers in e having the name i with the expression v, unless the identiﬁer is in a scope different from that
  * introduced by i */
  
- val subst3 : (Exp,Symbol,Exp) => Exp = (e,i,v) => e match {
+ val subst3 : (Exp,Symbol,Num) => Exp = (e,i,v) => e match {
     case Num(n) => e
     case Id(x) => if (x == i) v else e
     case Add(l,r) => Add( subst3(l,i,v), subst3(r,i,v))
@@ -244,7 +248,7 @@ val test4 = With('x, 5, Add('x, With('y, 3,'x)))
  * of i in e with v.
  */
  
- val subst4 : (Exp,Symbol,Exp) => Exp = (e,i,v) => e match {
+ val subst4 : (Exp,Symbol,Num) => Exp = (e,i,v) => e match {
     case Num(n) => e
     case Id(x) => if (x == i) v else e
     case Add(l,r) => Add( subst4(l,i,v), subst4(r,i,v))
@@ -278,7 +282,7 @@ val test5 = With('x, 5, With('x, 'x, 'x))
  * We ﬁnally get a valid programmatic deﬁnition of substitution (relative to the language we have so far):
  */
  
- val subst5 : (Exp,Symbol,Exp) => Exp = (e,i,v) => e match {
+ val subst5 : (Exp,Symbol,Num) => Exp = (e,i,v) => e match {
     case Num(n) => e
     case Id(x) => if (x == i) v else e
     case Add(l,r) => Add( subst5(l,i,v), subst5(r,i,v))
@@ -301,39 +305,6 @@ assert(eval5(test4) == 10)
 
 assert(eval5(test5) == 5) // Success!
 
-/* Exercise: Instead of evaluating xdef before substituting it into the body of the "with" expression, we could also
- * take the expression unevaluated, as is. That is, makeEval could also look like this: */
-
-def makeEval2(subst: (Exp,Symbol,Exp)=>Exp) : Exp=>Int = {
-  def eval(e: Exp) : Int = e match {
-    case Num(n) => n
-    case Id(x) => sys.error("unbound variable: "+x)
-    case Add(l,r) => eval(l) + eval(r)
-    case Mul(l,r) => eval(l) * eval(r)
-    case With(x, xdef, body) => eval(subst(body,x,xdef))  // substituting the unevaluated xdef into body
-  }
-  eval
-}
-
-def eval6 = makeEval2(subst5)
-
-/* Intuitively, eval5 and eval6 should produce the same results. This seems to be confirmed by our test cases. */
-
-assert(eval6(test) == eval5(test))
-assert(eval6(test2) == eval5(test2))
-assert(eval6(test3) == eval5(test3))
-assert(eval6(test4) == eval5(test4))
-assert(eval6(test5) == eval5(test5))
-
-/* Find an expression where eval5 produces a different result than eval6. 
- * What is the reason? What needs to be fixed? Fix it! (this is non-trivial)
- *
- * Hint: The correctness of our substitution function depends on an important invariant of its "v" argument that
- * we did not discuss explicitly yet. With eval6 you can construct examples that violate this invariant.
- */
- 
- 
- 
  
  /* SUMMARY:
   *
