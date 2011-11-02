@@ -217,7 +217,7 @@ val omega = App(Fun('x,App('x,'x)), Fun('x,App('x,'x)))
 
 /* Omega can be extended to yield a fixed point combinator, which can be
  * used to encode arbitrary recursive functions. We come back to this topic
- * later. 
+ * later. */
 
 /* Let's now discuss what an environment-based version of this interpreter looks like.
  *
