@@ -117,12 +117,12 @@ val y = Fun('f, App(Fun('x,App('f, App('x,'x))), Fun('x,App('f,App('x,'x)))))
 /* Using Y, we can construct infinite lists, such as the list of all natural numbers. */ 
 val allnats = App(App('y, Fun('nats, Fun('n, App(App('cons,'n), App('nats, Add('n,1)))))),1)
 /* We can also perform standard computations on infinite lists, such as mapping the successor function over it. */
-val test2toinfty = wth('cons,cons, 
+val list2toinfty = wth('cons,cons, 
                    wth('nil, nil, 
                    wth('y, y, 
                    wth('maplist, maplist,
                       App(App('maplist, Fun('x, Add('x,1))), allnats)))))
-/* Of course, test6 diverges when we use eval, but it works fine with evalcbn. It is hard to verify the result
+/* Of course, list2toinfty diverges when we use eval, but it works fine with evalcbn. It is hard to verify the result
  * due to an almost unreadable output. Hence we propose the following 
  *
  * Exercise: Extend the language such that you can implement the "take" function as known from Haskell within 
