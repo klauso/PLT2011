@@ -253,5 +253,24 @@ val blowup  = wth('a, Fun('x, Add('x,'x)),
   }
 }
 
-/* For instance, compare call-by-need and call-by-name in cbntest or blowup. */
+/* For instance, compare call-by-need and call-by-name in cbntest or blowup. 
+ *
+ * However, the meta-language (i.e., the subset of Scala features) used in the
+ * interpreter has become more complicated: Since we are using mutation, the order
+ * of evaluation and aliasing of object references becomes important. Luckily, 
+ * call-by-need agrees with call-by-name with regard to produced values and termination
+ * behavior, hence it is usually not necessary to reason about programs with the
+ * call-by-need semantics. If, however, one wants to reason about the performance
+ * of a program in a call-by-need setting, one has to take these additional complications
+ * into account. In practice, it is even worse, since languages like Haskell perform
+ * additional optimizations that, for instance, switch to call-by-value if an analysis
+ * can determine that an argument will definitely be used (lookup "strictness analysis"). 
+ 
+ Topics for class discussion:
+ - Is it a good idea to mix a language with implicit mutation (such as Java, Scala, C++, Python, ...)
+   with lazy evaluation?
+ - How can one simulate lazy evaluation in an eager language? 
+   Basic idea: 'Lambda' as evaluation firewall.
+ */
+ 
 
