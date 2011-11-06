@@ -18,7 +18,7 @@ be submitted as a "pull request". You can of course also send an email to Klaus 
  * (install GHC from www.haskell.org and browse through one of the tutorials)
  *
  * read "Why Functional Programming Matters" by John Hughes
- * available at http://www.cse.chalmers.se/~rjmh/Papers/whyfp.htm
+ * available at http://www.cse.chalmers.se/~rjmh/Papers/whyfp.html
  *  
  * What lazy evaluation means
  * --------------------------
