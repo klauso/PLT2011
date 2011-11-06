@@ -1,12 +1,9 @@
-
 sealed abstract class Exp
 case class Num(n: Int) extends Exp
 case class Id(name: Symbol) extends Exp
 case class Add(lhs: Exp, rhs: Exp) extends Exp
 implicit def num2exp(n: Int) = Num(n)
 implicit def id2exp(s: Symbol) = Id(s)
-
-/* Both function definitions and applications are expressions. */ 
 case class Fun(param: Symbol, body: Exp) extends Exp
 case class App (funExpr: Exp, argExpr: Exp) extends Exp
  
@@ -29,9 +26,9 @@ def ds(e: Exp) : Env => Value = e match {
     }
   }
   case Fun(param,body) => (env) => FunV( (v) => ds(body)(env + (param -> v)))
-  case App(f,a) => (env) => ds(f)(env) match {
+  case App(f,a) => (env) => (ds(f)(env), ds(a)(env)) match {
     // Use environment stored in closure to realize proper lexical scoping!
-    case FunV(g) => g( ds(a)(env))
+    case (FunV(g),arg) => g(arg)
     case _ => sys.error("can only apply functions")
   }
 }
@@ -50,9 +47,9 @@ def foldExp[T](v: Visitor[T], e: Exp) : T = {
   }
 }
 
-val dsvisitor = Visitor[Env=>Value]
-    (env=>n=> NumV(n), 
-     env=>lr => NumV(lr._1+lr._2), 
-     env=>x=>env(x), 
-     env=>fa => f._1 match FunV(g) => g(fa._2)(env),
-     env=> xbody => FunV( (v) => xbody._2(env+(xbody._1->v))))     
+val dsvisitor = new Visitor[Env=>Value](
+    (n:Int)=>env=> NumV(n), 
+    (l,r)=>env => (l(env), r(env)) match { case (NumV(v1),NumV(v2)) => NumV(v1+v2); case _ => sys.error("can only add numbers")  }, 
+     x=>env=>env(x), 
+     (f,a)=>env=> (f(env),a(env))  match { case (FunV(g),arg) => g(arg); case _ => sys.error("can only apply functions") },
+     (x,body)=>env=>FunV( (v) => body(env+(x->v))))     
