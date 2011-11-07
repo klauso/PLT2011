@@ -14,10 +14,6 @@ Topics for today:
 
 // Home Work
 
-/*
- * (i)  Discuss the advantages and disadvantes of pattern matching versus the visitor pattern.
- * (ii) Discuss: free variables in WAE. Lookup "test-driven development" on the internet.
- */
 
 
 // Language primitives
