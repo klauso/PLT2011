@@ -7,14 +7,25 @@ Lab Session, November 07, 2011
 Topics for today:
 
   * home work discussion
+  * Environments and closures
   * Language primitives
-  * Infinite lists
 
 */
 
 // Home Work
 
 
+// Environments and closures
+
+/*
+
+i) In the environment-based interpreted we introduced closures. 
+   What is a closure? What do we need them for?
+ii) Why did we not need closures in the substitution-based interpreter?
+iii) Why did we not need closures in the environment-based F1WAE interpreter?
+
+
+*/
 
 // Language primitives
 
@@ -36,17 +47,3 @@ Topics for today:
 
 
 
-
-// Infinite lists
-
-
-/*
-Write a Haskell program that constructs a list of:
-
-(i) all natural numbers
-(ii) all even natural numbers
-(iii) all squared integers
-(iv) all factorials, i.e. the infinite sequence `1,1,2,6,24,120,720,...`
-
-Discuss why infinite lists are useful.
-*/
