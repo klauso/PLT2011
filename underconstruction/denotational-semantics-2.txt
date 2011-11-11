@@ -1,0 +1,222 @@
+Lecture Notes, Programming Languages and Types, Klaus Ostermann
+
+
+Denotational Semantics, continued
+---------------------------------
+
+A _partial order_ (or: poset) is a pair (S, <=) where
+  S is a set of elements
+  <= is a relation on S which is reflexive, transitive, and antisymmetric.
+
+We can extend the lift operation to generate a partial order by defining
+x <= y iff x = _|_
+
+Given a subset B of S, y is an _upper bound_ of B if for all x in B, x <= y. Y is a
+_least upper bound_ (LUB), iff y is an upper bound and y <= z for all upper bounds z of B.
+We notate the LUB of a subset B as LUB(B).
+
+A _chain_ is a pairwise comparable sequence of elements x0, x1, x2, ...  from a poset such
+that x0 <= x1 <= x2 <= ... In general, a chain may or may not have a LUB (finite chains trivially
+have a LUB).
+
+A _complete partial order_ (CPO) is a partial order in which every chain has a LUB.
+
+Examples:
+
+- ( Pow(S), isSubsetOf ) is complete
+- ( Nat, <= ) is not complete (where <= is the <= on natural number)
+- ( S, =) is complete - this is called a _discrete_ CPO
+- ( S_, <=) is complete, where the partial order is defined as above.
+
+A CPO can have a least element, written _|_, such that for all elements x of
+the CPO _|_ <= x.
+
+A CPO with least element is called _CPO with bottom_ or _pointed CPO_.
+
+------------------------------------------------------------------------------------------------
+
+
+Given a CPO E, and a function domain D, we can turn the space of functions from D to E
+into a CPO by defining
+
+f <= g iff for all x in D, f(x) <= g(x)
+
+This CPO is pointed if E is pointed.
+
+To show that D -> E is a CPO we need to show that "<=" is a partial order and that
+all chains in D -> E have a LUB.
+
+The first part (<= is a partial order) is trivial.
+As for the second part, consider the chain f1 <= f2 <= f3 ...
+
+Then the function f(d) = LUB( {f1(d), f2(d), ...}) is a LUB for this chain .
+
+The idea of these definitions is that the meaning of a recursive definition
+f = F(f) can be defined as the LUB of a chain of functions that starts with the totally undefined
+function and gets more and more defined when iterating application of F.
+
+That is, we want LUB( F^n(_|_) | n in Nat) to be the least solution to f = F(f).
+
+However, this is not true for arbitrary F.
+
+For example,
+
+F(f) = if f = _|_ then 1
+       else if f = 1 then _|_
+       else 2
+
+will not generate a chain, although it has a least fixed point (2).
+
+Requiring that F is _monotonic_ fixed this problem:
+
+A function f: D -> D on a CPO D is _monotonic_ if for all x,y in D,
+if x <= y, then F(X) <= F(Y).
+
+It is easy to see that the elements F^n(_|_) form an increasing chain in D,
+if F is monotonic.
+
+However, it is not enough to demand that F is monotonic. It guarantees that we
+can find a LUB, but this does not mean that it is a fixed point.
+
+For example, in the CPO ([0,1],<=) (interval between 0 and 1 on the continuum)
+the function
+
+f : [0,1] -> [0,1]
+f(x) = 0.25 + 0.5*x if x < 0.5
+     = 1 if x >= 0.5
+
+is monotonic, but the LUB of f^n(0) is 0.5, which is different from the fixed
+point 1.
+
+The problem with this function is that f is not continuous at 0.5
+
+Hence we need to demand that f is continuous, but in a form that is appropriate
+for functions on CPOs (and not real numbers).
+
+An example more typical for the kinds of domains we deal with in denotational semantics:
+
+F : (N -> N_) -> (N -> N_)
+
+F(f)(n) = if g <= f then 1
+          else if n = 0 then 1
+          else if n > 1 then f (n-2)
+          else _|_
+
+where g(n) = if n div 2 = 0 then 1 else _|_
+
+The LUB of F^n(_|_) is g, but this is not a fixed point. The function lambda (n). 1
+is a fixed-point.
+
+
+-------------------------------------------------------------------------------
+
+Let (D,<=) be a CPO, and let F: D -> D be a monotonic function.
+F is _continuous_, if for every chain x0 <= x1 <= x2 <= .. in D,
+F preserves the LUB operator:
+LUB(F(xn) | n in Nat) = F( LUB(xn | n in Nat))
+
+Now let (D,<=) be a pointed CPO and F: D -> D be a monotonic, continuous function.
+
+We will first show that LUB( F^n(_|_)) is a fixed point of F. Then we will
+show that it is the _least_ fixed point of F.
+
+i) LUB( F^n(_|_)) is a fixed point of F.
+
+Proof: By monotonicity of of F, F^n(_|_) is a chain and hence LUB( F^n(_|_)) exists.
+Now, by continuity of F,
+
+F(LUB(F^n(_|_)) = LUB (F (F^n(_|_)) = LUB(F^(n+1)(_|_)) = LUB(F^n(_|_))
+
+ii) LUB( F^n(_|_)) is the least fixed point of F.
+
+Proof: see your next handin assignment :-)
+
+
+--------------------------------------------------------------------------------
+
+Back to giving a denotational semantics to F1WAE.
+
+Our motivation for this journey into mathematics was that we had no idea how
+to construct an environment for F1WAE. But now we have sufficient machinery to do so.
+
+First, observe that the partial order on functions can be extended to environments
+by
+
+(list (f1, v1) ... (fN, VN)) <= (list (f1, v'1) ... (fN, V'N))
+if v1 <= v'1 and ... and vN <= v'N.
+
+
+Now define
+
+genfenv = lambda (F) . list (f1, lambda(v) . [[e1]] F (x1:v) ) ...
+                        (fN, lambda(v) . [[eN]] F (xN:v) ) )
+
+
+Now consider genfenv^n ( list (f1, lambda(v) . _|_ ) ... (fN, lambda(v) . _|_)).
+
+If genfenv is monotonic and continuous, then we can define fenv to be the LUB
+of this chain.
+
+But how do we know whether this definition (and all the referenced definitions in
+the denotational semantics) are monotonic and continuous?
+
+As a rule of thumb, monotonicity can only be violated if we detect ranges where
+a function is undefined. Continuity often comes for free, e.g., it holds
+trivially if no infinite chains exist in the domain of the function.
+
+There are two formal ways:
+
+1) Prove by hand for this specific denotational semantics
+2) Prove, once and for all, that a set of constructions will generate monotonic
+and continuous functions and use only this set in the specification of denotations.
+
+
+-----------------------------------------------------------------------------------
+
+The following constructions generate CPOs or monotonic/continuous functions
+(given without proof):
+
+- Embedding : D -> D_ is monotonic&continuous
+- Lifting : (D -> E_) -> (D_ -> E_) is monotonic&continuous
+
+- Given CPOs D and E, the product DxE is a CPO, where
+  (d,e) <= (d',e') iff d <= d' and e <= e'
+  Pair constructors and destructors are m&c.
+- Given CPOs D and E, the (disjoint) sum D+E (aka coproduct)
+  is a CPO, where D+E = {in1(d) | d in D} U {in2(e) | e in E}
+  The associated constructors and destructors are m&c.
+- Given CPOs D and E, the set of all continuous functions from D
+  to E, written [D -> E], is a CPO. In particular, the LUB
+  of a chain of continuous functions is continuous.
+
+The following operations are m&c:
+
+- apply : [D->E]xD -> E
+- compose : [E->F] x [D->E] ->[D->F]
+- curry : [DxE->F] -> [D -> [E->F]]
+- uncurry: [D->[E->F]]->[DxE->F]
+- fix: [D->D] -> D, defined by
+  fix g = LUB(g^n(_|_))
+
+----------------------------------------------------------------------------------
+
+The semantic functions for F1WAE can be written in terms of these constructions,
+hence we conclude that that genfenv is a m&c function on CPOs, and hence its
+fixed point is well-defined.
+
+
+-----------------------------------------------------------------------------------
+
+To define a DS of the untyped lambda calculus (or FAE), one needs a domain that fulfills
+the domain equation
+
+D = D -> D
+
+As argued above, this equation has no solution if "->" is the normal function space
+constructor. However, it _can_ be solved if we restrict ourselves to continuous functions:
+
+D = [D -> D]
+
+The diagonalization argument does not work anymore,  and this domain equation can be solved
+with an "inverse limit" construction invented by Dana Scott. We will not discuss the details
+in class, though.

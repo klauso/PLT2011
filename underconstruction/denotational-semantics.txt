@@ -1,0 +1,179 @@
+Lecture Notes, Programming Languages and Types, Klaus Ostermann
+
+
+Denotational Semantics
+----------------------
+
+So far, we have defined the meaning of languages by giving interpreters written in Scheme.
+
+Interpreters are a precise language definition (given that the meaning of the host language is clear),
+but such a semantics is not directly amendable to mathematical reasoning about programs (such as
+reasoning about program equivalence).
+
+Also, there seems to be a relation between functions in our languages and mathematical functions,
+but the precise nature of this relation is not clear.
+
+The purpose of _denotational semantics_ is to give the meaning of a language by associating a
+mathematical object (such as a mathematical function) with each program phrase.
+
+Traditionally, the mapping from program code (syntax) to a semantic domain (its _denotation_) is
+written with double square brackets.
+
+For example, for the AE language it is quite easy to give a denotational semantics:
+
+[[ - ]] :: AE -> Z (where Z is the mathematical set of integers)
+[[ num (n) ]] = n
+[[ add (l r) ]] = [[l]] + [[r]]
+etc.
+
+The hallmark of denotational semantics is _compositionality_. This means that the meaning of a composite
+expression is a function over the meaning of its subexpressions. The definition for "add" above is
+compositional, but this nonsense definition isn't:
+
+[[ add (l r) ]] = [[ sub ( num (3), l ]]
+
+A more significant example of a non-compositional definition is the "app" case in our FAE interpreter, which
+also recurses on an expression that is not a subexpression of the application expression.
+
+Compositionality is essential because it assures that the constructed mathematical objects are well-defined
+and it enables compositional reasoning: An expression can be replaced by another expression in all contexts
+if they have the same denotation.
+
+The AE language is trivial, and things get much more interesting if we consider functions such as in FAE etc.
+
+For example, consider the identity function (fun x x). What mathematical function does this function
+_denote_? In mathematics, a function is a relation between two sets - its domain and its co-domain.
+But what is the domain of the denotation of the identity function?
+
+Another problem is that our function definitions are often recursive, and it is not clear at
+all whether, from a mathematical point of view, there are any solutions to these equations, and if
+there are, how to select the "right" solution.
+
+It is also not obvious how to deal with non-termination in mathematics.
+
+Finally, for FAE-like languages (untyped lambda calculus) and, as we will see later, for languages
+with recursive types, the domains of functions must satisfy equations such as
+
+D = D -> D
+
+but a standard diagonalization argument shows that this is impossible for any set with more than one
+element.
+
+All these problems are addressed in the framework of denotational semantics.
+
+--------------------------------------------------------------------------------
+
+
+In DS, non-termination is being dealt with by adding a designated element _|_ (bottom)
+to a domain D. The process of adding _|_ to a domain is called _lifting_. Lifting induces an
+injection operation "i" of the domain into the lifted domain. We will often be sloppy about
+lifting and write "x" instead of "i(x)".
+
+Due to the limited type setting capabilities of text files, we will use the notation
+D_ to denote D U { _|_ }.
+
+The alternative of instead reducing the domain of the function to these elements where it is
+defined would not work very well, because it would severly restrict function composition.
+
+One can also define a lift operator (-)* on functions which extends a function to its lifted
+domain by
+
+(f)* (_|_) = _|_
+(f)* (x)   = f(y) if x = i(y)
+
+If you think that this looks similar to the "bind" operator in the Maybe monad you are right!
+
+----------------------------------------------------------------------------------
+
+Let's start explore what we need by trying to give a denotational semantics to F1WAE.
+
+Its syntax is:
+
+(define-type F1WAE
+  [num (n number?)]
+  [plus (lhs F1WAE?) (rhs F1WAE?)]
+  [with (x symbol?) (e1 F1WAE?) (e2 F1WAE?)]
+  [id (x symbol?)]
+  [app (f symbol?) (a F1WAE?)])
+
+
+(define-type FunDef 
+  [fundef (name symbol?) (arg symbol?) (body F1WAE?)])
+
+
+and the code of the interpreter is:
+
+; interp: F1WAE listof(FunDef) -> Num
+
+(define (interp expr fun-defs)
+   (type-case F1WAE expr
+       [num (n) n]
+       [plus (l r) (+ (interp l fun-defs) (interp r fun-defs))]
+       [with (bound-id named-expr bound-body) 
+              (interp (subst bound-body bound-id 
+                             (num (interp named-expr fun-defs)))
+                      fun-defs)]
+       [id (v) (error 'interp "unknown identifier")]
+       [app (fun-name arg-expr) 
+            (local ([define the-fun-def (lookup-function fun-name fun-defs)])
+              (interp (subst (fundef-body the-fun-def)
+                             (fundef-arg the-fun-def)
+                             (num (interp arg-expr fun-defs)))
+                             fun-defs))]))
+
+
+The interpreter seems to say that every F1WAE expression
+denotes an integer. Hence we might try to say:
+
+[[ - ]] : F1WAE -> Z_
+
+This would work for "num" and "plus" (which are already defined compositionally), but
+what about the other cases? What do we do about the environment?
+
+We cannot just keep the function environment (fun-defs) as in the interpreter, since the environment contains
+syntax (the body), which is incompatible with our compositionality requirement.
+
+Also, due to compositionality, substitution is inappropriate for a denotational semantics, 
+since it produces expressions that are not subexpressions of the original program.
+
+Our only hope is to use "semantic" environments for both the function environment and function argument.
+
+A function argument in F1WAE denotes a number. A function in F1WAE denotes a partial function from a number to a number.
+
+Hence with
+
+Env = listof(Symbol,Z)
+FEnv = listof(Symbol, (Z -> Z_))
+
+we can define 
+
+[[ - ]] : F1WAE -> FEnv -> Env -> Z_
+
+To denote failure such as unknown identifier, we also use the _|_ value.
+
+[[ num (n) ]] fenv env = n
+[[ plus (l r) ]] fenv env = [[l]] fenv env + [[r]] fenv env
+[[ with (bound-id named-expr bound-body) ]] fenv env =
+  let a = [[named-expr]] fenv env in
+   case a of i(a') ->  [[bound-body]] fenv (bound-id,a') : env
+             _|_   -> _|_
+[[ id (v) ]] fenv env = 
+     if (v,x) in env then x else _|_
+[[ app (fun-name arg-expr ]] fenv env =
+  if (fun-name, p) in fenv then p*( [[ arg-expr ]] fenv env)
+                           else _|_
+
+
+But how can we assemble FEnv from the program?
+
+It would be easy if the functions were all independent (no function calls within function bodies),
+or if there would at least be a partial order on the functions such that a function calls only
+functions that are smaller (why?).
+
+But F1WAE functions can be (directly or indirectly) recursive!
+
+We need more mathematical infrastructure to deal with recursion, loops, and the like. The idea
+is to develop a theory of partial orders in which least fixed points can always be constructed.
+
+
+TO BE CONTINUED!
