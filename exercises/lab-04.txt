@@ -1,0 +1,47 @@
+Programming Languages and Types
+
+Lab Session, November 14, 2011
+
+
+Home work
+=========
+
+
+Fixpoint combinators
+====================
+
+Consider the following call-by-value fixpoint combinator:
+
+    Z = lambda f. 
+          (lambda x. f (lambda y. x x y))
+          (lambda x. f (lambda y. x x y))
+
+
+(i) Verify that `Z` indeed computes the fixpoint of its argument.
+(ii) Use `Z` to define the factorial function
+(iii) Use `Z` to define the mutually recursive functions `even` and `odd`,
+  defined as follows:
+
+    even 0 = True
+    even n = odd (n - 1)
+
+    odd 0 = False
+    odd n = even (n - 1)
+
+
+
+
+
+Total functional programming
+============================
+
+(Until next week) 
+
+Now that you now how to handle recursion, read the article _Total functional
+programming_ by David Turner and answer the following questions.
+(http://www.jucs.org/jucs_10_7/total_functional_programming/jucs_10_07_0751_0768_turner.pdf)
+
+(i) What are the advantages of total functional programming?
+(ii) What is the difference between data and codata?
+(iii) In your opinion, why is total functional programming not more widely applied in practice?
+
