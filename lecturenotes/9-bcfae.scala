@@ -2,7 +2,7 @@
 These are lecture notes for the "Programming Languages and Types" course by Klaus Ostermann 
 at the University of Marburg
 
-loosely based on Sec. 6 of "Programming Languages: Application and Interpretation" by
+loosely based on Sec. 13 of "Programming Languages: Application and Interpretation" by
 Shriram Krishnamurthi
 
 Please comment/correct/improve these notes via github. Proposals or questions can
