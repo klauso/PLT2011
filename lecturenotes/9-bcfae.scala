@@ -198,9 +198,9 @@ def eval(e: Exp, env: Env, s: Store) : (Value, Store) = e match {
     case NumV(_) => Set.empty
     case ClosureV(f,env) => allAddrInEnv(env)
   }
-  def allAddrInEnv(env: Env) = env.values.map(allAddrInVal _).fold(Set.empty)( _ union _)
+  def allAddrInEnv(env: Env) : Set[Address] = env.values.map(allAddrInVal _).fold(Set.empty)(_ union _)
   def mark(seed: Set[Address]) : Set[Address] = {
-    val newaddresses = seed.map( ad => allAddrInVal(s(ad))).fold(Set.empty)(_ union _)
+    val newaddresses = seed.flatMap( ad => allAddrInVal(s(ad))) 
     if (newaddresses.subsetOf(seed)) seed else mark(seed union newaddresses)
   }
   val marked = mark(allAddrInEnv(env)) // mark ...
@@ -209,3 +209,13 @@ def eval(e: Exp, env: Env, s: Store) : (Value, Store) = e match {
 
 val teststore = Map(10 -> ClosureV(Fun('x,'y), Map('y -> AddressV(8))), 6 -> NumV(42), 9 -> AddressV(7), 7 -> NumV(6), 8 -> AddressV(6))
 assert(gc(Map('a -> AddressV(10)), teststore) == teststore - 7 - 9)           
+
+/* Note that garbage collectors only _approximate_ the set of semantically disposable 
+ * store entities. Even with garbage collectors, applications may very well suffer from
+ * memory leaks. The approximation should be _safe_, in the sense that a datum is never
+ * reclaimed when it is used by subsequent computations. Furthermore, it must reclaim
+ * enough garbage to be actually useful - reachability has turned out to be a rather
+ * useful (and sound) approximation of semantic disposability.  Garbage collectors must
+ * also be efficient. Efficiency of GC is a huge research topic that we are not going to 
+ * discuss. One efficiency problem with garbage collectors based on reachability that we want to
+ * mention is the "stop-the-world" phenomenon
