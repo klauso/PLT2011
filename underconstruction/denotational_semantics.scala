@@ -48,8 +48,8 @@ def foldExp[T](v: Visitor[T], e: Exp) : T = {
 }
 
 val dsvisitor = new Visitor[Env=>Value](
-    (n:Int)=>env=> NumV(n), 
+     n=>env=> NumV(n), 
     (l,r)=>env => (l(env), r(env)) match { case (NumV(v1),NumV(v2)) => NumV(v1+v2); case _ => sys.error("can only add numbers")  }, 
      x=>env=>env(x), 
-     (f,a)=>env=> (f(env),a(env))  match { case (FunV(g),arg) => g(arg); case _ => sys.error("can only apply functions") },
-     (x,body)=>env=>FunV( (v) => body(env+(x->v))))     
+    (f,a)=>env=> (f(env),a(env))  match { case (FunV(g),arg) => g(arg); case _ => sys.error("can only apply functions") },
+    (x,body)=>env=>FunV( (v) => body(env+(x->v))))     
