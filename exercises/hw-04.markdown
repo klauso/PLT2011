@@ -31,7 +31,7 @@ scoped recursive language been easier?
 Total functional programming
 ============================
 
-Now that you now how to handle recursion, read the article _Total functional
+Now that you know how to handle recursion, read the article _Total functional
 programming_ by David Turner and answer the following questions.
 
     http://www.jucs.org/jucs_10_7/total_functional_programming/jucs_10_07_0751_0768_turner.pdf
