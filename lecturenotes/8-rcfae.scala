@@ -69,12 +69,15 @@ val sum = Letrec('sum, Fun('n, If0('n, 0, Add('n, App('sum, Add('n,-1))))), App(
  * To be able to use both mutable and immutable maps as environments, we define: 
  */
 
-type Env = scala.collection.Map[Symbol, Value] // just "Map" defaults to scala.collection.immutable.Map
 
 /* No changes to the values in our language. */
 sealed abstract class Value
+
+type Env = scala.collection.Map[Symbol, Value] // just "Map" defaults to scala.collection.immutable.Map
+
 case class NumV(n: Int) extends Value
 case class ClosureV(f: Fun, env: Env) extends Value
+
 
 /* The interpreter is unchanged except for the additional Letrec case. */
 def eval(e: Exp, env: Env) : Value = e match {
