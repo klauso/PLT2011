@@ -1,3 +1,12 @@
+/*
+These are lecture notes for the "Programming Languages and Types" course by Klaus Ostermann 
+at the University of Marburg
+
+Please comment/correct/improve these notes via github. Proposals or questions can
+be submitted as an "issue"; proposals for corrections/extensions/improvements can
+be submitted as a "pull request". You can of course also send an email to Klaus Ostermann */
+
+
 /* Let us now consider a more accurate modeling of garbage collection (gc).
  * This time, we will use a mutable store instead of a functional store,
  * because our purpose is not to explain mutation but to explain gc.

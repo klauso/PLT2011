@@ -1,3 +1,12 @@
+/*
+These are lecture notes for the "Programming Languages and Types" course by Klaus Ostermann 
+at the University of Marburg
+
+Please comment/correct/improve these notes via github. Proposals or questions can
+be submitted as an "issue"; proposals for corrections/extensions/improvements can
+be submitted as a "pull request". You can of course also send an email to Klaus Ostermann */
+
+
 /* For each desired language semantics, there exist many different ways to
  * implement an interpreter in some meta-language to encode this semantics.
  *
