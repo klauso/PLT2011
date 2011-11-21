@@ -23,5 +23,5 @@ instead of a lexically scoped one?
 Memory management
 =================
 
-i) Discuss advantages and disadvantages of garbage collection.
-ii) What are the pros and cons of moving vs. non-moving garbage collectors?
+1. Discuss advantages and disadvantages of garbage collection.
+2. What are the pros and cons of moving vs. non-moving garbage collectors?
