@@ -116,7 +116,7 @@ def nextAddress : Address = {
  * this usage of mutation is not essential: Instead we could just search for the largest address in the
  * present store and add one to it.
  *
- * Let's now discuss the evaluate for FAE with conditionals and boxes, BCFAE. To this end, consider
+ * Let's now discuss the evaluation of FAE with conditionals and boxes, BCFAE. To this end, consider
  * the following example program: */
 
 val test3 = wth('switch, NewBox(0),

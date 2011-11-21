@@ -36,9 +36,9 @@ programming_ by David Turner and answer the following questions.
 
     http://www.jucs.org/jucs_10_7/total_functional_programming/jucs_10_07_0751_0768_turner.pdf
 
-(i) What are the advantages of total functional programming?
-(ii) What is the difference between data and codata?
-(iii) In your opinion, why is total functional programming not more widely applied in practice?
+1. What are the advantages of total functional programming?
+2. What is the difference between data and codata?
+3. In your opinion, why is total functional programming not more widely applied in practice?
 
 
 
