@@ -146,4 +146,11 @@ object FAE {
  *
  * One dimension in which the interpreter could easily be made more syntactic is
  * the treatment of numbers and arithmetic. For instance, we could represent numbers
- * as sequences of digits instead of Scala numbers. */
+ * as sequences of digits instead of Scala numbers. 
+ * 
+ * Another aspect in which our FAE interpreter relies on the host language is memory
+ * management. This is particularly relevant for environments stored inside closures.
+ * These environments cannot be organized on the call stack and hence need memory
+ * management. Since we are using Scala references to refer to environments, environments
+ * that are no longer needed are collected by the Scala (or rather, Java) virtual machine.
+ */
