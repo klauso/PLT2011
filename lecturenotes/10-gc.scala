@@ -154,9 +154,9 @@ class MarkAndSweepStore(size: Int) extends Store {
   def allAddrInEnv(env: Env) : Set[Int] = env.values.map(allAddrInVal _).fold(Set.empty)(_ union _)
 
   def mark(seed: Set[Int]) : Unit = {
+    seed.foreach( memory(_).marked = true)
     val newaddresses = seed.flatMap( ad => allAddrInVal(memory(ad))).filter( ! memory(_).marked) 
     if (newaddresses != Set.empty) {
-      newaddresses.foreach( memory(_).marked = true)
       mark(newaddresses)
     }
   }

@@ -1,0 +1,57 @@
+Homework for the course: 
+Programming Languages and Types.
+
+
+Hand in ...
+
+  ... before Monday, November 28, 8:00 am in the morning.
+  ... by email to pllecture @ informatik ...
+  ... as attached files
+
+You can hand in in small groups. Mention the names of all group
+members in the email and in all source files. Every group member
+should understand the full solution. If possible, meet in person,
+talk, and work together!
+  
+Copy the necessary definitions from the lecture notes.
+
+
+
+
+Weak references
+===============
+
+Weak references retain a pointer to an box, but do not prevent the garbage
+collection of the box. Accordingly, after some time, the weakly referenced
+box might be garbage collected, thus dereferencing the weak reference returns
+the undefined box (or null).
+
+Implement weak references for our language with mark-and-sweep garbage collection.
+
+
+HOAS interpreter
+================
+
+Discuss how the HOAS interpreter works and how it relates to the FAE
+interpreter. Is it equivalent to the FAE interpreter? What happened to closures,
+identifiers and environments? Can you implement dynamic scoping with an HOAS
+interpreter?
+
+
+Syntactic interpretation vs. metainterpretation
+===============================================
+
+Make our interpreter more syntactic by representing numbers as syntactic objects
+that do not rely on Scala numbers.
+
+
+Church encoding
+===============
+
+Write the following functions using Church-encoded representations of data.
+
+1. Factorial function on naturals.
+2. Addition function on naturals.
+3. Length function on finite lists.
+
+Do not forget to test all of your code.
