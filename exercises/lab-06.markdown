@@ -22,3 +22,6 @@ Tail calls
 4. The "web transformation" linearizes computations. Illustrate this through an
    example and explain the phenomenon. How can we implement a web-transformed
    program efficiently?
+
+Further reading
+    http://repository.readscheme.org/ftp/papers/ai-lab-pubs/AIM-443.pdf
