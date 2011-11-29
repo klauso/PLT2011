@@ -143,7 +143,7 @@ def cps(e: Exp) : CPSCont = e match {
    case Add(e1,e2) => {
      val k = freshName(freeVars(e), 'k)
      val lv = freshName(freeVars(e2), 'lv)
-     CPSCont(k, CPSContApp(cps(e1),CPSCont(lv, CPSContApp(cps(e2), CPSCont('rv, CPSAdd('rv, lv))))))
+     CPSCont(k, CPSContApp(cps(e1),CPSCont(lv, CPSContApp(cps(e2), CPSCont('rv, CPSContApp(k,CPSAdd('rv, lv)))))))
    }  
    case Fun(a, body) => {
      val k = freshName(freeVars(e), 'k)
