@@ -168,8 +168,9 @@ def cps(e: Exp) : CPSCont = e match {
 /* This transformation is the so-called Fischer CPS transformation. There are many other CPS transformation algorithms.
    The Fischer CPS transformation is nice because it is so simple and because it is defined as one simple structural 
    recursion over the AST. Its main disadvantage is the existence of so-called "administrative redexes". 
-   An administrative redex is a function application whose operator is a "continuation lambda" - a lambda reduced during
-   CPS transformation. Such function applications can be computed immediately because the function which is called is known.
+   An administrative redex is a function application whose operator is a "continuation lambda" - a lambda produced during
+   CPS transformation that was not in the original program. Such function applications can be computed immediately because 
+   the function which is called is known.
    
    For instance, cps(Add(2,3)) yields 
    
