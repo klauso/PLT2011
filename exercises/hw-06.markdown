@@ -1,0 +1,67 @@
+Homework for the course: 
+Programming Languages and Types.
+
+
+Hand in ...
+
+  ... before Monday, December 2, 8:00 am in the morning.
+  ... by email to pllecture @ informatik ...
+  ... as attached files
+
+You can hand in in small groups. Mention the names of all group
+members in the email and in all source files. Every group member
+should understand the full solution. If possible, meet in person,
+talk, and work together!
+  
+Copy the necessary definitions from the lecture notes.
+
+
+
+Continuation-passing style
+==========================
+
+Define what continuation-passing style is. How do programs in
+continuation-passing style look like?
+How does your definition compare to the syntax definition CPSExp in the lecture
+notes? 
+
+
+CPS transformation
+==================
+
+1. CPS-transform the factorial function in Scala by hand:
+
+    def fact(n : Int) : Int = {
+      if (n == 0)
+        1
+      else
+        n * fact(n - 1)
+    }
+
+  You can use `==`, `*` and `-` as primitive functions directly without
+  transforming them. Does your program adhere to your definition of CPS? Do
+  stackoverflow exceptions still occur when executing the transformed program on
+  large inputs?
+2. CPS-transform the Fibonacci function by hand.
+3. CPS-transform the fold function by hand.
+
+CPS transformation 2
+====================
+
+Enhance the CPS transformation from the lecture to support a variant of the
+letrec construct from RCFAE:
+
+    case class Letrec(x: Symbol, e: Fun, body: Exp) extends Exp
+
+Note, that this letrec variant only allows functions `Fun` to be bound by a
+letrec. If you get stuck, check out the text book by Krishnamurthi.
+
+
+Administrative redexes
+======================
+
+Use the enhanced CPS transformation from the previous task to CPS-transform the
+factorial function and the Fibonacci function. Compare the results with the
+hand-transformed Scala versions you derived in task 2. Explain the
+differences. Can you suggest ways to improve the implemented CPS transformation?
+
