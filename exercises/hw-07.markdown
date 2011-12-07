@@ -1,0 +1,50 @@
+Homework for the course: 
+Programming Languages and Types.
+
+
+Hand in ...
+
+  ... before Monday, December 12, 8:00 am in the morning.
+  ... by email to pllecture @ informatik ...
+  ... as attached files
+
+You can hand in in small groups. Mention the names of all group
+members in the email and in all source files. Every group member
+should understand the full solution. If possible, meet in person,
+talk, and work together!
+  
+Copy the necessary definitions from the lecture notes.
+
+
+First-class continuations
+=========================
+
+1. Illustrate first-class continuations by at least two examples.
+2. Investigate the expressiveness of the following scenarios and how they
+  differ. In which system can one implement a letcc construct?
+  a. direct-style interpreter, direct-style program
+  b. direct-style interpreter, CPS-transformed program
+  b. CPS-transformed interpreter, direct-style program
+  b. CPS-transformed interpreter, CPS-transformed program
+
+
+
+Defunctionalization
+===================
+
+1. Explain what defunctionalization is and what it is good for.
+2. Lambda-lift the following program:
+    
+    def fold[A,B](f: (A, B) => A, e: A, l: List[B]): A = 
+      l match {
+        case Nil => e
+        case x :: xs => fold(f, f((e, x)), xs)
+    
+    fold((x, y) => (x + y) / 2, 1, List(1, 2, 3, 4, 5))
+3. Defunctionalize the resulting program.
+4. Test.
+5. Repeat steps 2--4 for the following use of fold.
+    
+    fold((f: Int => Int, g: Int => Int) => (z: Int) => f(g(z)),
+         (z: Int) => z,
+         List(x => x+1, x => x+2, x => x-1, x => x*2))
