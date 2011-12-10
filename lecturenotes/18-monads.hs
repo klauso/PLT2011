@@ -1,3 +1,6 @@
+import Data.Map 
+
+
 -- An explanations of today's lecture notes are in Sec. 1 and 2 of the following paper:
 -- The essence of functional programming, Philip Wadler,  19'th Symposium on Principles of Programming Languages, ACM Press, Albuquerque, January 1992. 
 -- available at http://homepages.inf.ed.ac.uk/wadler/papers/essence/essence.ps
@@ -84,16 +87,16 @@ Here is the standard non-monadic evaluator:
 eval :: Exp1 -> Value1
 eval (Num1 n)   = NumV1 n
 eval (Add1 l r) = 
-  let (NumV v1) = eval l
-      (NumV v2) = eval r
-  in NumV (v1+v2)
+  let (NumV1 v1) = eval l
+      (NumV1 v2) = eval r
+  in NumV1 (v1+v2)
 
 {- We will now write the same evaluator in monadic style. This means that we
 assume that the return type of the function is "m Value1" or some monad m,
 rather than just Value1. This forces us to use >>= and return to compose
 function calls, rather than using ordinary function composition. -}
     
-eval1 :: Exp1 -> m Value1
+eval1 :: Monad m => Exp1 -> m Value1
 eval1 (Num1 n)   = return (NumV1 n)
 eval1 (Add1 l r) = 
   eval1 l >>= (\(NumV1 v1) -> 
@@ -191,16 +194,15 @@ Using Maybe, we can define the language like this:
 data Exp2 = Num2 Int | Add2 Exp2 Exp2 | Fail2 deriving Show
 data Value2 = NumV2 Int deriving (Show,Eq)
 
-eval2 :: Exp -> Maybe Value
-eval2 (Num n) = Just (NumV n)
-eval2 (Add l r) = 
+eval2 :: Exp2 -> Maybe Value2
+eval2 (Num2 n) = Just (NumV2 n)
+eval2 (Add2 l r) = 
    case eval2 l of
-      Just (NumV v1) -> case eval2 r of 
-             Just (NumV v2) -> Just (NumV (v1+v2))
+      Just (NumV2 v1) -> case eval2 r of 
+             Just (NumV2 v2) -> Just (NumV2 (v1+v2))
              Nothing -> Nothing
-       (Just (NumV v2)) = eval r
-       in JustNumV (v1+v2)
-eval2 Fail = Nothing       
+      Nothing ->  Nothing
+eval2 Fail2 = Nothing       
 
 {- Here we see a typical example of the modularity problem mentioned above. Although
 addition has little to do with the new "Fail" construct, we have to completely alter
@@ -243,7 +245,6 @@ runtest2' = eval2 test2' -- should be Just (NumV2 8)
 -- Reader Monad
 ----------------
 
-import Data.Map 
 
 newtype Reader r a = Reader {
     runReader :: r -> a
@@ -392,3 +393,24 @@ test5 = wth5 "switch"  (NewBox5 (Num5 0))
 main5 :: Exp5 -> (Value5, Store5)
 main5 e = runStateReader (eval5 e) empty (empty,0)
 
+newtype State s a = State { runState :: s -> (a, s) }
+
+instance Monad (State s) where
+    return a = State $ \s -> (a, s)
+    m >>= k  = State $ \s -> let
+        (a, s') = runState m s
+        in runState (k a) s'
+
+get   = State $ \s -> (s, s)
+put s = State $ \_ -> ((), s)        
+
+newtype ReaderT r m a = ReaderT { runReaderT :: r -> m a }
+
+instance (Monad m) => Monad (ReaderT r m) where
+    return a = ReaderT $ \_ -> return a
+    m >>= k  = ReaderT $ \r -> do
+        a <- runReaderT m r
+        runReaderT (k a) r
+        
+eval5' :: Exp5 -> ReaderT Env5 (State Store5) Value5
+eval5' = undefined       
