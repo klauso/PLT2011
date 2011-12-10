@@ -92,7 +92,7 @@ eval (Add1 l r) =
   in NumV1 (v1+v2)
 
 {- We will now write the same evaluator in monadic style. This means that we
-assume that the return type of the function is "m Value1" or some monad m,
+assume that the return type of the function is "m Value1" for some monad m,
 rather than just Value1. This forces us to use >>= and return to compose
 function calls, rather than using ordinary function composition. -}
     
@@ -411,6 +411,63 @@ instance (Monad m) => Monad (ReaderT r m) where
     m >>= k  = ReaderT $ \r -> do
         a <- runReaderT m r
         runReaderT (k a) r
-        
+  
+askT       = ReaderT return
+localT f m = ReaderT $ \r -> runReaderT m (f r)  
+
+lift :: Monad m => m a -> ReaderT r m a 
+lift m = ReaderT $ \_ -> m
+
+getT = lift get
+putT = lift . put
+
+mallocT :: Value5 -> ReaderT Env5 (State Store5) Int 
+mallocT v = lift $ State $ \(s,nextFree) -> (nextFree,(insert nextFree v s,nextFree+1))
+
 eval5' :: Exp5 -> ReaderT Env5 (State Store5) Value5
-eval5' = undefined       
+eval5' (Num5 n) = return $ NumV5 n 
+eval5' (Add5 l r) = 
+ do (NumV5 v1) <- eval5' l
+    (NumV5 v2) <- eval5' r
+    return (NumV5 (v1+v2))
+eval5' (Id5 x) = 
+  do env <- askT
+     return (env ! x)
+eval5' (Fun5 param body) = 
+  do
+    env <- askT
+    return $ ClosureV5 param body env
+eval5'  (App5 f a) = 
+  do
+   (ClosureV5 param body cenv) <- eval5' f
+   av <- eval5' a
+   localT (\env -> (insert param av cenv)) (eval5' body)
+eval5' (If0 e1 e2 e3) =
+  do
+    (NumV5 n) <- eval5' e1
+    if (n == 0) then eval5' e2 else eval5' e3    
+eval5' (NewBox5 e) = 
+  do
+   ev <- eval5' e
+   newAddress <- mallocT ev
+   return $ Address5 newAddress
+eval5' (OpenBox5 e) = 
+  do
+    (Address5 i) <- eval5' e
+    (s,_) <- getT
+    return $ s ! i    
+eval5' (SetBox5 e1 e2) = 
+  do
+    (Address5 i) <- eval5' e1
+    e2v <- eval5' e2
+    (s,nfa) <- getT
+    putT (insert i e2v s, nfa)
+    return e2v
+eval5' (Seq5 e1 e2) = 
+  do
+    eval5' e1
+    eval5' e2   
+
+main5' :: Exp5 -> (Value5, Store5)
+main5' e = runState (runReaderT (eval5' e) empty) (empty,0)
+
