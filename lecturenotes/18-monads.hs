@@ -4,30 +4,107 @@
 --
 -- These lecture notes are not yet finished; more explanation will be added later on.
 
-import Control.Exception
-import Data.Map 
 
--- The definition of Monads in the standard library is this:
+{-
+_Monads_ are an abstraction of how functions are composed. In ordinary function application,
+the result of some function application is passed as an argument to another function, hence
+ordinary function application has the type and implementation
 
--- class  Monad m  where
---     (>>=)       :: m a -> (a -> m b) -> m b
---     return      :: a -> m a
---     m >> k      =  m >>= \_ -> k
+bind :: a -> (a -> b) -> a
+bind a f = f a
+
+In many cases, however, function composition is more sophisticated but still equally uniform.
+It turns out that many interesting kinds of function composition have the form
+
+bind :: m a -> (a -> m b) -> m b
+
+for some type constructor m, such as the Maybe or the list type constructor. In addition, it
+is useful to have a way to "inject" an ordinary value into such a type constructor, i.e.,
+a function
+
+return :: a -> m a
+
+With return, one can, for instance, define a variant of bind that accepts a function of
+type a -> b rather than a -> m b as follows:
+
+map :: m a -> (a -> b) -> m b
+map x f = x `bind` \y -> return (f x)
+
+(Note that this function is a generalization of the map function on lists)
+
+Monads can be defined and used in any programming language, but in some languages the necessary
+syntactic overhead makes programming with monads less attractive. Haskell is a language
+in which it is particularly convenient to program with monads, hence we choose Haskell to illustrate
+the idea.
+
+In Haskell, the Monad interface from above is described as a type class (find out what type classes
+are if you do not know). This type class has the "bind" and "return" functions in its interface, and
+also some convenience methods such as ">>", which are useful if the result of the previous function
+call is irrelevant. The bind function is written ">>=" in Haskell (but still pronounced 'bind').
+ 
+class  Monad m  where
+    (>>=)       :: m a -> (a -> m b) -> m b
+    return      :: a -> m a
+    m >> k      =  m >>= \_ -> k
 
 
------------------
--- Identity Monad
------------------
+This typeclass is useful to write code that is polymorphic in the actual monad, such as the library function
+ 
+mapM :: Monad m => (a -> m b) -> [a] -> m [b]    
+
+A similar effect can be achieved in other languages by passing the ">>=" and "return" 
+functions as parameters to monad-polymorphic functions. It is however difficult to do
+so in a type-safe way if the language is statically typed but does not support
+parameterization by type constructors.
+
+In the remainder of these notes we will study several variants of our interpreters
+using monadic style. The problem that we want to address with monads is that the interpreters
+were rather fragile with regard to certain changes, such as introducing environments or mutable state.
+In particular, the definitions of language constructs that are irrelevant from the point of view
+of the new feature had to be changed, e.g., we had to change the "Add" branch of the interpreter
+when we introduced environments or mutable state. This is bad in several ways: a) We would rather
+have a more modular way of specifying the semantics of our language constructs, in which the 
+semantic definitions of the language constructs are decoupled from each other. b) It is bad
+from a software engineering point of view because we have to change a lot of code (basically
+the whole interpreter, which could be huge for realistic languages) when we
+introduce a new language feature. Historically, monads were invented (or "found") to address
+problem a).
+
+At first, let us consider the basic AE language from the
+first language. Here is the syntax of expressions and values:
+-}
+
 data Exp1 = Num1 Int | Add1 Exp1 Exp1 deriving Show
 data Value1 = NumV1 Int deriving (Show,Eq)
+
+{- 
+Here is the standard non-monadic evaluator: 
+-}
+
+eval :: Exp1 -> Value1
+eval (Num1 n)   = NumV1 n
+eval (Add1 l r) = 
+  let (NumV v1) = eval l
+      (NumV v2) = eval r
+  in NumV (v1+v2)
+
+{- We will now write the same evaluator in monadic style. This means that we
+assume that the return type of the function is "m Value1" or some monad m,
+rather than just Value1. This forces us to use >>= and return to compose
+function calls, rather than using ordinary function composition. -}
     
-eval1 :: Monad m => Exp1 -> m Value1
+eval1 :: Exp1 -> m Value1
 eval1 (Num1 n)   = return (NumV1 n)
 eval1 (Add1 l r) = 
   eval1 l >>= (\(NumV1 v1) -> 
   eval1 r >>= (\(NumV1 v2) -> 
   return (NumV1 (v1+v2))))
 
+  
+{- This style of nesting functions can become somewhat cumbersome. For this reason
+Haskell provides syntactic sugar for using ">>=", namely the _do notation_.
+Using do-notation we can rewrite eval1 to eval1' as follows: -}
+ 
 -- eval1' is identical to eval1 but uses do-notation   
 eval1' :: Monad m => Exp1 -> m Value1
 eval1' (Num1 n)   = return (NumV1 n)
@@ -36,40 +113,127 @@ eval1' (Add1 l r) =
     (NumV1 v2) <- eval1' r
     return (NumV1 (v1+v2))
 
+{- 
+The desugaring rules for do-notation are as follows: 
+do { x } = x
+do { x ; <stmts> }
+  = x >> do { <stmts> }
+do { v <- x ; <stmts> }
+  = x >>= \v -> do { <stmts> }
 
-newtype Identity a = Identity { runIdentity :: a }
+To use eval1 or eval1', we have to specify a monad with which we want
+to parameterize the interpreter. In Haskell, we can define a monad
+by defining an instance of the Monad typeclass. An instance is
+passed to Monad-polymorphic functions implicitly, based on the type
+context in which the function is called. In other languages, one would
+pass the monad instance explicitly.
+
+The simplest monad is the _identity monad_, which is a kind of neutral
+element in the sense that it means that we want just ordinary function 
+composition.
+
+The type constructor for the identity monad is the identity function on types,
+lambda T.T
+Since Haskell does not support proper functions on the type level,  we have
+to use a data type definition instead, which means that "m a" is not "a"
+but "Identity a" for some data type "a". This makes using the identity monad
+a bit more cumbersome since we have to wrap and unwrap the "Identity a" values. 
+
+Usually these data types are of the form "data X a = ...". In the special case
+that the data type has exactly one variant with exactly one field, we can 
+use a "newtype" declaration instead. This is useful because the "newtype" construct
+can be implemented more efficiently than "data".
+
+Here is the definition of the identity monad:
+-}  
+
+newtype Identity a = Identity { runIdentity :: a } -- runIdentity extracts the stored value
+                                                   -- its type is runIdentity :: Identity a -> a
 instance Monad Identity where
    return a = Identity a
    m >>= k  = k (runIdentity m)
 
+{- We can now use this monad to run our eval1. 
+Notice that we unwrap the value with "runIdentity".
+The Haskell compiler will implicitly pass the Identity monad to eval1 because it can infer
+from the call to "runIdentity", an instance of "Identity" is needed, and hence the
+only matching monad instance is the Identity Monad.
+-}
+   
 test1 = Add1 (Num1 3) (Num1 5)
 runtest1 :: Value1
 runtest1 = runIdentity (eval1 test1)
 
------------------
--- Maybe Monad
------------------
+{-
+The identity monad illustrates that we can always get the "ordinary" behavior of a
+monadic function back. But monads become interesting when we use different forms
+of function composition. To this end, we will now introduce the _Maybe_ monad.
+
+To motivate the Maybe monad, let us consider how we deal with errors in our interpreters,
+such as "variable not bound", "Closure expected, found Number" etc.
+
+We have often dealt with such errors using the exception handling facilities of the
+meta-language, but exception handling is rather limited because the errors are
+not "first class" - for instance, we cannot define an "error value" which is an
+actual value. A better alternative is to encode possible errors in the type of
+values. To this end, Haskell offers the standard datatype "Maybe"
+
+-- data  Maybe a  =  Nothing | Just a
+
+Similar types are available in other languages, e.g., in Scala Maybe is called "Option".
+
+Since our language is so simple that no errors can occur, we extend it with a
+new (useless) language construct whose semantics is that it produces a failure.
+
+Using Maybe, we can define the language like this:
+-}
 
 data Exp2 = Num2 Int | Add2 Exp2 Exp2 | Fail2 deriving Show
 data Value2 = NumV2 Int deriving (Show,Eq)
 
--- The definition of the Maybe Monad in the Haskell standard library is as follows:
+eval2 :: Exp -> Maybe Value
+eval2 (Num n) = Just (NumV n)
+eval2 (Add l r) = 
+   case eval2 l of
+      Just (NumV v1) -> case eval2 r of 
+             Just (NumV v2) -> Just (NumV (v1+v2))
+             Nothing -> Nothing
+       (Just (NumV v2)) = eval r
+       in JustNumV (v1+v2)
+eval2 Fail = Nothing       
 
--- data  Maybe a  =  Nothing | Just a
+{- Here we see a typical example of the modularity problem mentioned above. Although
+addition has little to do with the new "Fail" construct, we have to completely alter
+its definition.
+
+Luckily, the kind of function composition as displayed in the Add branch of the above
+interpreter can be abstracted over in a monad: The Maybe monad. Here is how the
+Maybe monad is defined in the Haskell standard library:
+-}
 
 -- instance  Monad Maybe  where
 --    (Just x) >>= k      = k x
 --    Nothing  >>= _      = Nothing
 --    return              = Just
   
-eval2 :: Exp2 -> Maybe Value2
-eval2 (Num2 n)   = return (NumV2 n)
-eval2 (Add2 l r) = 
- do (NumV2 v1) <- eval2 l
-    (NumV2 v2) <- eval2 r
+{- Using the Maybe monad, we can now write the interpreter for Exp2 as follows: -}
+  
+eval2' :: Exp2 -> Maybe Value2
+eval2' (Num2 n)   = return (NumV2 n)
+eval2' (Add2 l r) = 
+ do (NumV2 v1) <- eval2' l
+    (NumV2 v2) <- eval2' r
     return (NumV2 (v1+v2))
-eval2 Fail2 = Nothing
+eval2' Fail2 = Nothing
 
+{- 
+Notice that the "Add2" branch is still exactly the same as in the original eval1' interpreter!
+Yet its behavior is very different when used with the Maybe monad instead of the Identity monad:
+When used with the identity monad it behaves like the add branch of eval; with the Maybe
+monad it behaves like the add branch of eval2.
+
+Here are some tests that illustrate that eval2 and eval2' implement the same semantics.
+-}
 test2 = Add2 Fail2 (Num2 5)
 test2' = Add2 (Num2 3) (Num2 5)
 runtest2 = eval2 test2 -- should be Nothing
@@ -78,6 +242,8 @@ runtest2' = eval2 test2' -- should be Just (NumV2 8)
 ----------------
 -- Reader Monad
 ----------------
+
+import Data.Map 
 
 newtype Reader r a = Reader {
     runReader :: r -> a
