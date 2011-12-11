@@ -1,3 +1,5 @@
+{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleContexts, FlexibleInstances #-}
+
 import Data.Map 
 
 
@@ -254,11 +256,11 @@ instance Monad (Reader r) where
     return a = Reader $ \_ -> a
     m >>= k  = Reader $ \r -> runReader (k (runReader m r)) r
 
-ask :: Reader a a 
-ask = Reader id
+askR :: Reader a a 
+askR = Reader id
 
-local :: (r -> b) -> Reader b a -> Reader r a
-local f m = Reader $ runReader m . f
+localR :: (r -> b) -> Reader b a -> Reader r a
+localR f m = Reader $ runReader m . f
 
 data Exp3 = Num3 Int | Id3 String | Add3 Exp3 Exp3 | Fun3 String Exp3 | App3 Exp3 Exp3 deriving (Show,Eq)
 data Value3 = NumV3 Int | ClosureV3 String Exp3 Env3 deriving (Show,Eq)
@@ -271,17 +273,17 @@ eval3 (Add3 l r) =
     (NumV3 v2) <- eval3 r
     return (NumV3 (v1+v2))
 eval3 (Id3 x) = 
-  do env <- ask
+  do env <- askR
      return (env ! x)
 eval3 (Fun3 param body) = 
   do
-    env <- ask
+    env <- askR
     return $ ClosureV3 param body env
 eval3  (App3 f a) = 
   do
    (ClosureV3 param body cenv) <- eval3 f
    av <- eval3 a
-   local (\env -> (insert param av cenv)) (eval3 body   )
+   localR (\env -> (insert param av cenv)) (eval3 body   )
 
 test3 = App3 (Fun3 "x" (Add3 (Id3 "x") (Num3 5))) (Num3 7)
 
@@ -314,11 +316,12 @@ instance Monad (StateReader r s) where
     return a = StateReader $ \_ s -> (a,s)
     m >>= k  = StateReader $ \r s -> let (a,s') = (runStateReader m r s) in (runStateReader (k a)) r s'
 
-askR :: StateReader a s a
-askR = StateReader (\r s -> (r,s))
 
-localR :: (r -> b) -> StateReader b s a -> StateReader r s a
-localR f m = StateReader $ (\r s -> (runStateReader m) (f r) s)
+askR' :: StateReader a s a
+askR' = StateReader (\r s -> (r,s))
+
+localR' :: (r -> b) -> StateReader b s a -> StateReader r s a
+localR' f m = StateReader $ (\r s -> (runStateReader m) (f r) s)
     
 getS :: StateReader r s s 
 getS = StateReader (\_ s -> (s,s))
@@ -336,8 +339,6 @@ wth5 x e body = App5 (Fun5 x body) e
 data Value5 = NumV5 Int | ClosureV5 String Exp5 Env5 | Address5 Int deriving (Show,Eq)
 type Env5 = Map String Value5
 type Store5 = (Map Int Value5,Int)
-malloc :: Value5 -> StateReader r Store5 Int 
-malloc v = StateReader $ \r (s,nextFree) -> (nextFree,(insert nextFree v s,nextFree+1))
 
 eval5 :: Exp5 -> StateReader Env5 Store5 Value5
 eval5 (Num5 n) = return $ NumV5 n 
@@ -346,26 +347,27 @@ eval5 (Add5 l r) =
     (NumV5 v2) <- eval5 r
     return (NumV5 (v1+v2))
 eval5 (Id5 x) = 
-  do env <- askR
+  do env <- askR'
      return (env ! x)
 eval5 (Fun5 param body) = 
   do
-    env <- askR
+    env <- askR'
     return $ ClosureV5 param body env
 eval5  (App5 f a) = 
   do
    (ClosureV5 param body cenv) <- eval5 f
    av <- eval5 a
-   localR (\env -> (insert param av cenv)) (eval5 body)
+   localR' (\env -> (insert param av cenv)) (eval5 body)
 eval5 (If0 e1 e2 e3) =
   do
     (NumV5 n) <- eval5 e1
     if (n == 0) then eval5 e2 else eval5 e3    
 eval5 (NewBox5 e) = 
   do
-   ev <- eval5 e
-   newAddress <- malloc ev
-   return $ Address5 newAddress
+    ev <- eval5 e
+    (s,nextFree) <- getS
+    putS (insert nextFree ev s, nextFree+1)
+    return $ Address5 nextFree
 eval5 (OpenBox5 e) = 
   do
     (Address5 i) <- eval5 e
@@ -401,8 +403,8 @@ instance Monad (State s) where
         (a, s') = runState m s
         in runState (k a) s'
 
-get   = State $ \s -> (s, s)
-put s = State $ \_ -> ((), s)        
+getS'   = State $ \s -> (s, s)
+putS' s = State $ \_ -> ((), s)        
 
 newtype ReaderT r m a = ReaderT { runReaderT :: r -> m a }
 
@@ -412,17 +414,16 @@ instance (Monad m) => Monad (ReaderT r m) where
         a <- runReaderT m r
         runReaderT (k a) r
   
+askT :: Monad m => ReaderT r m r
 askT       = ReaderT return
+
 localT f m = ReaderT $ \r -> runReaderT m (f r)  
 
 lift :: Monad m => m a -> ReaderT r m a 
 lift m = ReaderT $ \_ -> m
 
-getT = lift get
-putT = lift . put
-
-mallocT :: Value5 -> ReaderT Env5 (State Store5) Int 
-mallocT v = lift $ State $ \(s,nextFree) -> (nextFree,(insert nextFree v s,nextFree+1))
+getT = lift getS'
+putT = lift . putS'
 
 eval5' :: Exp5 -> ReaderT Env5 (State Store5) Value5
 eval5' (Num5 n) = return $ NumV5 n 
@@ -448,9 +449,10 @@ eval5' (If0 e1 e2 e3) =
     if (n == 0) then eval5' e2 else eval5' e3    
 eval5' (NewBox5 e) = 
   do
-   ev <- eval5' e
-   newAddress <- mallocT ev
-   return $ Address5 newAddress
+    ev <- eval5' e
+    (s,nextFree) <- getT
+    putT (insert nextFree ev s, nextFree+1)
+    return $ Address5 nextFree
 eval5' (OpenBox5 e) = 
   do
     (Address5 i) <- eval5' e
@@ -470,4 +472,134 @@ eval5' (Seq5 e1 e2) =
 
 main5' :: Exp5 -> (Value5, Store5)
 main5' e = runState (runReaderT (eval5' e) empty) (empty,0)
+
+
+
+class Monad m => StateReaderMonad r s m | m -> r, m -> s where
+    ask   :: m r
+    local :: (r -> r) -> m a -> m a
+    get :: m s
+    put :: s -> m ()
+    
+instance StateReaderMonad r s (StateReader r s) where
+  ask = askR'
+  local = localR'
+  get = getS
+  put = putS  
+  
+
+instance StateReaderMonad r s (ReaderT r (State s)) where 
+  ask = askT
+  local = localT
+  get = getT
+  put = putT
+  
+eval5'' :: StateReaderMonad Env5 Store5 m => Exp5 -> m Value5
+eval5'' (Num5 n) = return $ NumV5 n 
+eval5'' (Add5 l r) = 
+ do (NumV5 v1) <- eval5'' l
+    (NumV5 v2) <- eval5'' r
+    return (NumV5 (v1+v2))
+eval5'' (Id5 x) = 
+  do env <- ask
+     return (env ! x)
+eval5'' (Fun5 param body) = 
+  do
+    env <- ask
+    return $ ClosureV5 param body env
+eval5''  (App5 f a) = 
+  do
+   (ClosureV5 param body cenv) <- eval5'' f
+   av <- eval5'' a
+   local (\env -> (insert param av cenv)) (eval5'' body)
+eval5'' (If0 e1 e2 e3) =
+  do
+    (NumV5 n) <- eval5'' e1
+    if (n == 0) then eval5'' e2 else eval5'' e3    
+eval5'' (NewBox5 e) = 
+  do
+    ev <- eval5'' e
+    (s,nextFree) <- get
+    put (insert nextFree ev s, nextFree+1)
+    return $ Address5 nextFree
+eval5'' (OpenBox5 e) = 
+  do
+    (Address5 i) <- eval5'' e
+    (s,_) <- get
+    return $ s ! i    
+eval5'' (SetBox5 e1 e2) = 
+  do
+    (Address5 i) <- eval5'' e1
+    e2v <- eval5'' e2
+    (s,nfa) <- get
+    put (insert i e2v s, nfa)
+    return e2v
+eval5'' (Seq5 e1 e2) = 
+  do
+    eval5'' e1
+    eval5'' e2   
+
+    
+newtype Cont a b = Cont { runCont :: (b -> a) -> a }
+ 
+instance Monad (Cont a) where 
+   m >>= f = Cont (\c -> (runCont m) (\b -> (runCont (f b)) c))
+   return x = Cont (\c -> c x)
+    
+callCC :: ((a -> Cont r b) -> Cont r a) -> Cont r a
+callCC f = Cont $ \k -> runCont (f (\a -> Cont $ \_ -> k a)) k
+
+newtype ContT r m a = ContT { runContT :: (a -> m r) -> m r }
+
+instance (Monad m) => Monad (ContT r m) where
+    return a = ContT ($ a)
+    m >>= k  = ContT $ \c -> runContT m (\a -> runContT (k a) c)
+
+liftedCallCC :: ((a -> ReaderT r (Cont r1) b) -> ReaderT r (Cont r1) a) -> ReaderT r (Cont r1) a
+liftedCallCC f = ReaderT $ \ r -> callCC $ \ c -> runReaderT (f (ReaderT . const . c)) r
+
+
+data Exp6 = Num6 Int | Id6 String | Add6 Exp6 Exp6 | Fun6 String Exp6 
+          | App6 Exp6 Exp6 | CallCC6 String Exp6 deriving (Show,Eq)
+data Value6 a = NumV6 Int | ClosureV6 String Exp6 (Env6 a) 
+            | ContV6 ((Value6 a) -> a) 
+type Env6 a = Map String (Value6 a)
+
+
+eval6 :: Exp6 -> ReaderT (Env6 a) (Cont a) (Value6 a)
+eval6 (Num6 n) = return $ NumV6 n 
+eval6 (Add6 l r) = 
+ do (NumV6 v1) <- eval6 l
+    (NumV6 v2) <- eval6 r
+    return (NumV6 (v1+v2))
+eval6 (Id6 x) = 
+  do env <- askT
+     return (env ! x)
+eval6 (Fun6 param body) = 
+  do
+    env <- askT
+    return $ ClosureV6 param body env
+eval6  (App6 f a) = 
+  do
+   (ClosureV6 param body cenv) <- eval6 f
+   av <- eval6 a
+   localT (\env -> (insert param av cenv)) (eval6 body   )
+eval6 (CallCC6 c body) =
+  ReaderT $ \env -> 
+    Cont $ \k ->
+     runCont (runReaderT (eval6 body) (insert c (ContV6 k) env)) k
+ -- callCC (\k -> 
+ --             runReaderT (localT (\env' -> insert c (ContV6 (undefined :: Value6 a -> a)) env')  (eval6 body)) env) 
+
+  
+--localT :: (r -> r1) -> ReaderT r1 m a -> ReaderT r m a  
+--localT f m = ReaderT $ \r -> runReaderT m (f r)  
+-- newtype ReaderT r m a = ReaderT { runReaderT :: r -> m a }
+--callCC :: ((a -> Cont r b) -> Cont r a) -> Cont r a
+--newtype Cont a b = Cont { runCont :: (b -> a) -> a }
+
+--Value6b -> Cont a (Value6 b)
+              
+test6 = App6 (Fun6 "x" (Add6 (Id6 "x") (Num6 5))) (Num6 7)
+--runtest6 = let (NumV6 n) = (runCont (runReaderT (eval6 test6) empty)) id in n
 
