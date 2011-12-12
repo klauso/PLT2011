@@ -1,0 +1,52 @@
++Homework for the course: 
+Programming Languages and Types.
+
+
+Hand in ...
+
+  ... before Monday, December 12, 8:00 am in the morning.
+  ... by email to pllecture @ informatik ...
+  ... as attached files
+
+You can hand in in small groups. Mention the names of all group
+members in the email and in all source files. Every group member
+should understand the full solution. If possible, meet in person,
+talk, and work together!
+  
+Copy the necessary definitions from the lecture notes.
+
+
+
+
+Monads in action
+================
+Write the following programs using monads:
+
+1. Implement your own monad for fail-safe numbers. First, define a data type for
+representing numbers that support a special value `NaN` (not a number). Second,
+define an instance of the type class `Monad` for your data type. A computation
+based on a `NaN` value should always yield `NaN`.
+2. Write safe numeric operations where `NaN` is the result of dividing by zero.
+3. Write a calculator (interpreter of arithmetic expressions) with standard numbers
+that supports global variable bindings (use a reader monad).
+4. Write a calculator that uses safe numeric operations and supports global
+variable bindings.
+5. Write the latter calculator with and without do notation.
+6. Desugar the calculator into a monad-free program, that is, into a program
+that does neither use do notation, bind, or return.
+
+
+Monadic laws
+============
+
+To qualify as a monad, one does not only need a type constructor and a
+bind/return implementation of the correct type. In addition, monads must
+respect the following three algebraic laws:
+
+1. `(bind (return x) f)  == (f x)`
+2. `(bind m return) == m`
+3. `(bind (bind m f) g) == (bind m (lambda (x) (bind (f x) g)))`
+
+1. Rephrase the laws in terms of do-notation. 
+2. Prove that the identity monad, the Maybe monad, and the Reader monad satisfy these laws. 
+3. Discuss why monads should obey these laws.
