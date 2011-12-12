@@ -243,10 +243,14 @@ test2' = Add2 (Num2 3) (Num2 5)
 runtest2 = eval2 test2 -- should be Nothing
 runtest2' = eval2 test2' -- should be Just (NumV2 8)
 
-----------------
--- Reader Monad
-----------------
+{- Another important pattern of function composition which we observed in our
+interpreters is the passing of environments in the environment-based interpreters.
+This pattern is captured and generalized by the _reader_ (or environment) monad.
 
+It abstracts over the type of environments (r) and values (a). The return
+function of this monad ignores the environment, whereas the >>= function
+captures the environment propagation pattern.
+-}
 
 newtype Reader r a = Reader {
     runReader :: r -> a
@@ -256,11 +260,19 @@ instance Monad (Reader r) where
     return a = Reader $ \_ -> a
     m >>= k  = Reader $ \r -> runReader (k (runReader m r)) r
 
+{- The following two auxiliary functions are useful to get the current environment
+(askR) and change the environment in a subcomputation (localR). In the standard
+Haskell library, these functions are members of a type class MonadReader, but for
+simplicity we do not abstract over the reader type here. -}   
 askR :: Reader a a 
 askR = Reader id
 
 localR :: (r -> b) -> Reader b a -> Reader r a
 localR f m = Reader $ runReader m . f
+
+{- Using the reader monad, we can now specify the environment-based FAE interpreter.
+Note that those cases unrelated to environments (Add and Num) are unaffected by
+the addition of environments. -}
 
 data Exp3 = Num3 Int | Id3 String | Add3 Exp3 Exp3 | Fun3 String Exp3 | App3 Exp3 Exp3 deriving (Show,Eq)
 data Value3 = NumV3 Int | ClosureV3 String Exp3 Env3 deriving (Show,Eq)
@@ -289,9 +301,22 @@ test3 = App3 (Fun3 "x" (Add3 (Id3 "x") (Num3 5))) (Num3 7)
 
 runtest3 = (runReader $ eval3 test3) empty -- snhould be  NumV3 12
 
------------------
--- List Monad
------------------
+{- Another important monad is the _list monad_. Computations in the list monad (that is, return type [a]) 
+represent computations with zero or more valid answers. 
+Here is the instance declaration for the list monad:
+
+instance Monad [] where
+  return a = [a]
+  xs >>= f = concat (map f xs)
+
+The list monad has many real-world applications. It is the conceptual foundation of Microsoft's LINQ,
+list comprehensions in Haskell, and for-comprehensions in Scala. In lazy languages, it is also useful
+to implement backtracking algorithms in an elegant way.
+
+We illustrate the list monad with a hypothetical extension of our language by "amb" expressions.
+Amb(e1,e2) means that the result of this expression is nondeterministically either the value of e1 or of e2.
+We write an interpreter that enumerates all possible values of a program containing "amb":
+-}
 
 data Exp4 = Num4 Int | Add4 Exp4 Exp4 | Amb4 Exp4 Exp4 deriving Show
 data Value4 = NumV4 Int deriving (Show,Eq)
@@ -304,33 +329,155 @@ eval4 (Add4 l r) =
     return (NumV4 (v1+v2))
 eval4 (Amb4 e1 e2) = eval4 e1 ++ eval4 e2
 
+{- Another function composition pattern we have seen was the dataflow of store passing in the BCFAE interpreter.
+This pattern of function composition is captured by the _state monad_.
 
-----------------------
--- StateReader Monad
-----------------------
+Here is its definition: -}
+newtype State s a = State { runState :: s -> (a, s) }
 
+instance Monad (State s) where
+    return a = State $ \s -> (a, s)
+    m >>= k  = State $ \s -> let
+        (a, s') = runState m s
+        in runState (k a) s'
+
+{- Auxiliary functions for conveniently reading and writing the store -}        
+getState   = State $ \s -> (s, s)
+putState s = State $ \_ -> ((), s)        
+
+{- We cannot yet implement BCFAE using this monad, because we also need to pass around the environment.
+For now we will hence consider a simpler example. Let's assume we want to count the number of 
+additions performed during evaluation of an AE expression. Our state is just a single integer
+in this case, hence -}
+
+eval1'' :: Exp1 -> State Int Value1
+eval1'' (Num1 n)   = return (NumV1 n)
+eval1'' (Add1 l r) = 
+ do (NumV1 v1) <- eval1' l
+    (NumV1 v2) <- eval1' r
+    c <- getState
+    putState (c+1)
+    return (NumV1 (v1+v2))
+
+{- A monad which is somewhat related to the state monad is the _IO monad_. A value
+of type IO a is a computation that, when performed, may do some input/output before
+delivering a value of type a.
+
+A more concrete way of looking at the IO monad is to think of it as having 
+a type similar to the state monad, except that the state is the whole external "World".
+
+IO a = World -> (a, World)
+
+It is important to understand that a value of type IO a just represents the "plan" to
+perform some IO, which is different from actually executing the IO. Such a plan is only
+executed when it is applied to some initial "world", which only happens in "main" or
+the ghci prompt.
+
+Another important point is that the actual definition of the IO type constructor is hidden,
+and there is no way to get "out" of the IO monad, i.e., it is not possible to extract 
+the a out of an IO a value (except if using "unsafePerformIO", which is forbidden
+by the UN declaration of human rights).
+
+Here are two typical functions using the IO monad:
+
+getChar :: IO Char
+putChar :: Char -> IO () 
+
+The monad operations, bind and return, have the following meaning: The bind operation
+composes (and sequentializes) the IO plans in the arguments; return lifts a value
+into the IO monad without any IO effects associated to it.
+    
+For instance, to read to characters and return them into a pair of characters we can
+write the following function: -}
+
+getTwoChars :: IO (Char,Char) 
+getTwoChars = 
+  do
+    c1 <- getChar
+    c2 <- getChar
+    return (c1,c2)
+    
+{- Since >>= is the only operation that composes IO actions, and since the IO type
+is hidden, it is impossible for the program to ever get hold of a "world". The
+"world" is never duplicated or thrown away.
+
+The IO monad allows us to rebuild the control structures of ordinary imperative languages
+as ordinary functions in the IO monad.
+
+Examples:
+-}    
+
+forever :: IO () -> IO ()
+forever a = a >> forever a
+
+repeatN :: Int -> IO a -> IO ()
+repeatN 0 a = return ()
+repeatN n a = a >> repeatN (n-1) a
+
+for :: [a] -> (a -> IO ()) -> IO ()
+for [] fa = return ()
+for (x:xs) fa = fa x >> for xs fa
+
+sequence' :: [IO a] -> IO [a] -- we use the name sequence' since sequence is predefined
+sequence' [] = return []
+sequence' (a:as) = 
+  do
+    r <- a
+    rs <- sequence' as
+    return (r:rs)
+
+{- Instead of having a fixed collection of control structures as in most other languages, we
+can instead invent new ones, possibly application specific, as the need arises. That's
+a quite powerful technique! -}
+    
+{- Let us now return to the problem of modularizing our interpreters.
+
+In the BCFAE language, function composition is particularly sophisticated, because both an environment
+and a store have to be passed around at the same time, each with its own dataflow. We have already
+seen how to do each of those in isolation, namely in the form of the Reader monad and the State monad,
+respectively.
+
+We will first show how to capture this form of function composition in a single monad we call "StateReader";
+later we will discuss how we can compose this monad from simpler monads such as the state and reader monad.
+
+In BCFAE, we have to pass both an environment r and a state s. The environment is just pushed into the
+computation; the state is pushed in but the computation also produces a new state. This justifies the following
+type definition:
+-}
 newtype StateReader r s a = StateReader {
     runStateReader :: r -> s -> (a,s)
 }
+
+{- The unit computation in the StateReader monad ignores its environment and returns the state unchanged,
+hence the "return" computation for a value a is \_ s -> (a,s). The bind operator in this monad captures
+the dataflow pattern for environments and states: Push the environment into the subcomputation; thread
+the state through the computation.
+
+Note: When reading these definitions it is useful to ignore the wrapping/unwrapping operations (StateReader,
+runStateReader), since they are just an artefact of Haskell. 
+-}
+
 instance Monad (StateReader r s) where
     return a = StateReader $ \_ s -> (a,s)
     m >>= k  = StateReader $ \r s -> let (a,s') = (runStateReader m r s) in (runStateReader (k a)) r s'
 
 
+{- For StateReader, we can now define variants of ask and local again. -}    
 askR' :: StateReader a s a
 askR' = StateReader (\r s -> (r,s))
 
 localR' :: (r -> b) -> StateReader b s a -> StateReader r s a
 localR' f m = StateReader $ (\r s -> (runStateReader m) (f r) s)
-    
+
+{- For accessing the state, it is useful to have an operation to get the current state, and an operation to
+update the current state. -}    
 getS :: StateReader r s s 
 getS = StateReader (\_ s -> (s,s))
 
 putS :: s -> StateReader r s ()
 putS s = StateReader (\r _ -> ((),s))
 
-
--- The BCFAE interpreter implemented using the StateReader monad
+{- Now let's implement BCFAE using the StateReader monad. Here is the definition of abstract syntax and runtime entities. -}
 
 data Exp5 = Num5 Int | Id5 String | Add5 Exp5 Exp5 | Fun5 String Exp5 | App5 Exp5 Exp5 
             | NewBox5 Exp5 | OpenBox5 Exp5 | SetBox5 Exp5 Exp5 | Seq5 Exp5 Exp5 | If0 Exp5 Exp5 Exp5 deriving (Show,Eq)
@@ -339,6 +486,10 @@ wth5 x e body = App5 (Fun5 x body) e
 data Value5 = NumV5 Int | ClosureV5 String Exp5 Env5 | Address5 Int deriving (Show,Eq)
 type Env5 = Map String Value5
 type Store5 = (Map Int Value5,Int)
+
+{- The interpreter parameterizes the StateReader monad with its choice for representing environments and states: Env5 and Store5. 
+Notice (again) that only those branches of the interpreter that do something with states or environments are coupled to
+their existence; the other branches use only the generic monad operations. -}
 
 eval5 :: Exp5 -> StateReader Env5 Store5 Value5
 eval5 (Num5 n) = return $ NumV5 n 
@@ -385,7 +536,7 @@ eval5 (Seq5 e1 e2) =
     eval5 e1
     eval5 e2    
 
-    
+{- The example from 9-bcfae.scala -}  
 test5 = wth5 "switch"  (NewBox5 (Num5 0))
              (wth5 "toggle"  (Fun5 "dummy" (If0 (OpenBox5 (Id5 "switch"))
                                               (Seq5 (SetBox5 (Id5 "switch") (Num5 1)) (Num5 1))
@@ -395,16 +546,49 @@ test5 = wth5 "switch"  (NewBox5 (Num5 0))
 main5 :: Exp5 -> (Value5, Store5)
 main5 e = runStateReader (eval5 e) empty (empty,0)
 
-newtype State s a = State { runState :: s -> (a, s) }
 
-instance Monad (State s) where
-    return a = State $ \s -> (a, s)
-    m >>= k  = State $ \s -> let
-        (a, s') = runState m s
-        in runState (k a) s'
+{- 
+Monad Laws.
+------------
 
-getS'   = State $ \s -> (s, s)
-putS' s = State $ \_ -> ((), s)        
+All monads should obey the following properties.
+
+    "Left identity": return a >>= f  =  f a
+    "Right identity":  m >>= return  =  m
+    "Associativity":  (m >>= f) >>= g  =  m >>= (\x -> f x >>= g)
+
+Why should these laws hold? See http://www.haskell.org/haskellwiki/Monad_Laws
+
+
+Generic monad operations.
+-------------------------
+The monad interface is powerful enough to generalize many well-known standard functions, e.g., for lists.
+
+Here are some examples:
+
+fmap :: Monad m => (a -> b) -> m a -> m b
+fmap f m = do x <- m; return (f x)
+
+Note: In Haskell, the typeclass constraint of fmap is "Functor m" instead of "Monad m".
+
+join :: Monad m => m (m a) -> m a
+
+foldM :: Monad m => (a -> b -> m a) -> a -> [b] -> m a
+
+mapM :: Monad m => (a -> m b) -> [a] -> m [b]
+
+Exercise: What is the implementation of these functions? What do these functions do in each of the
+monads you know?
+-}
+
+
+{-
+Monad Transformers
+==================
+
+-}
+
+
 
 newtype ReaderT r m a = ReaderT { runReaderT :: r -> m a }
 
@@ -422,8 +606,8 @@ localT f m = ReaderT $ \r -> runReaderT m (f r)
 lift :: Monad m => m a -> ReaderT r m a 
 lift m = ReaderT $ \_ -> m
 
-getT = lift getS'
-putT = lift . putS'
+getT = lift getState
+putT = lift . putState
 
 eval5' :: Exp5 -> ReaderT Env5 (State Store5) Value5
 eval5' (Num5 n) = return $ NumV5 n 
@@ -539,6 +723,10 @@ eval5'' (Seq5 e1 e2) =
     eval5'' e1
     eval5'' e2   
 
+{- 
+Monads and Continuations - the Continuation Monad.    
+==================================================
+-}
     
 newtype Cont a b = Cont { runCont :: (b -> a) -> a }
  
@@ -549,24 +737,31 @@ instance Monad (Cont a) where
 callCC :: ((a -> Cont r b) -> Cont r a) -> Cont r a
 callCC f = Cont $ \k -> runCont (f (\a -> Cont $ \_ -> k a)) k
 
+-- Example from 15-forkjoin.rkt
+-- (define (f n) (+ 10 (* 5 (let/cc k (/ 1 (if (zero? n) (k 1) n))))))
+
+f :: Float -> Cont a Float
+f n = do
+       a <- callCC (\k -> do b <- (if (n == 0) then (k 1) else (return n))
+                             return (1 / b))
+       return $ 10 + 5*a
+
+testf n = runCont (f n) id        
+                                              
 newtype ContT r m a = ContT { runContT :: (a -> m r) -> m r }
 
 instance (Monad m) => Monad (ContT r m) where
     return a = ContT ($ a)
     m >>= k  = ContT $ \c -> runContT m (\a -> runContT (k a) c)
 
-liftedCallCC :: ((a -> ReaderT r (Cont r1) b) -> ReaderT r (Cont r1) a) -> ReaderT r (Cont r1) a
-liftedCallCC f = ReaderT $ \ r -> callCC $ \ c -> runReaderT (f (ReaderT . const . c)) r
-
-
 data Exp6 = Num6 Int | Id6 String | Add6 Exp6 Exp6 | Fun6 String Exp6 
-          | App6 Exp6 Exp6 | CallCC6 String Exp6 deriving (Show,Eq)
-data Value6 a = NumV6 Int | ClosureV6 String Exp6 (Env6 a) 
-            | ContV6 ((Value6 a) -> a) 
-type Env6 a = Map String (Value6 a)
+          | App6 Exp6 Exp6 | Letcc6 String Exp6 deriving (Show,Eq)
+data Value6 = NumV6 Int | ClosureV6 String Exp6 Env6 
+            | ContV6 (Value6  -> Value6) 
+type Env6 = Map String Value6
 
 
-eval6 :: Exp6 -> ReaderT (Env6 a) (Cont a) (Value6 a)
+eval6 :: Exp6 -> ReaderT Env6 (Cont Value6) Value6 
 eval6 (Num6 n) = return $ NumV6 n 
 eval6 (Add6 l r) = 
  do (NumV6 v1) <- eval6 l
@@ -581,25 +776,22 @@ eval6 (Fun6 param body) =
     return $ ClosureV6 param body env
 eval6  (App6 f a) = 
   do
-   (ClosureV6 param body cenv) <- eval6 f
-   av <- eval6 a
-   localT (\env -> (insert param av cenv)) (eval6 body   )
-eval6 (CallCC6 c body) =
+   fv <- eval6 f
+   case fv of 
+     (ClosureV6 param body cenv) -> 
+       (do  av <- eval6 a
+            localT (\env -> (insert param av cenv)) (eval6 body))
+     (ContV6 f) ->
+       (do av <- eval6 a
+           ReaderT $ \_ ->
+             Cont $ \k -> (f av)) -- ignore k       
+eval6 (Letcc6 c body) =
   ReaderT $ \env -> 
     Cont $ \k ->
      runCont (runReaderT (eval6 body) (insert c (ContV6 k) env)) k
- -- callCC (\k -> 
- --             runReaderT (localT (\env' -> insert c (ContV6 (undefined :: Value6 a -> a)) env')  (eval6 body)) env) 
-
-  
---localT :: (r -> r1) -> ReaderT r1 m a -> ReaderT r m a  
---localT f m = ReaderT $ \r -> runReaderT m (f r)  
--- newtype ReaderT r m a = ReaderT { runReaderT :: r -> m a }
---callCC :: ((a -> Cont r b) -> Cont r a) -> Cont r a
---newtype Cont a b = Cont { runCont :: (b -> a) -> a }
-
---Value6b -> Cont a (Value6 b)
-              
+     
 test6 = App6 (Fun6 "x" (Add6 (Id6 "x") (Num6 5))) (Num6 7)
---runtest6 = let (NumV6 n) = (runCont (runReaderT (eval6 test6) empty)) id in n
+runtest6 = let (NumV6 n) = (runCont (runReaderT (eval6 test6) empty)) id in n
 
+test6' = Add6 (Num6 1) (Letcc6 "k" (Add6 (Num6 2) (App6 (Id6 "k") (Num6 3)))) 
+runtest6' = let (NumV6 n) = (runCont (runReaderT (eval6 test6') empty)) id in n
