@@ -47,6 +47,8 @@ respect the following three algebraic laws:
 2. `(bind m return) == m`
 3. `(bind (bind m f) g) == (bind m (lambda (x) (bind (f x) g)))`
 
+Solve the following tasks.
+
 1. Rephrase the laws in terms of do-notation. 
 2. Prove that the identity monad, the Maybe monad, and the Reader monad satisfy these laws. 
 3. Discuss why monads should obey these laws.
