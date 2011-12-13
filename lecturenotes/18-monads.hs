@@ -430,6 +430,41 @@ sequence' (a:as) =
 can instead invent new ones, possibly application specific, as the need arises. That's
 a quite powerful technique! -}
     
+{- 
+Monad Laws.
+------------
+
+All monads should obey the following properties.
+
+    "Left identity": return a >>= f  =  f a
+    "Right identity":  m >>= return  =  m
+    "Associativity":  (m >>= f) >>= g  =  m >>= (\x -> f x >>= g)
+
+Why should these laws hold? See http://www.haskell.org/haskellwiki/Monad_Laws
+
+
+Generic monad operations.
+-------------------------
+The monad interface is powerful enough to generalize many well-known standard functions, e.g., for lists.
+
+Here are some examples:
+
+fmap :: Monad m => (a -> b) -> m a -> m b
+fmap f m = do x <- m; return (f x)
+
+Note: In Haskell, the typeclass constraint of fmap is "Functor m" instead of "Monad m".
+
+join :: Monad m => m (m a) -> m a
+
+foldM :: Monad m => (a -> b -> m a) -> a -> [b] -> m a
+
+mapM :: Monad m => (a -> m b) -> [a] -> m [b]
+
+Exercise: What is the implementation of these functions? What do these functions do in each of the
+monads you know?
+-}
+    
+    
 {- Let us now return to the problem of modularizing our interpreters.
 
 In the BCFAE language, function composition is particularly sophisticated, because both an environment
@@ -547,48 +582,26 @@ main5 :: Exp5 -> (Value5, Store5)
 main5 e = runStateReader (eval5 e) empty (empty,0)
 
 
-{- 
-Monad Laws.
-------------
-
-All monads should obey the following properties.
-
-    "Left identity": return a >>= f  =  f a
-    "Right identity":  m >>= return  =  m
-    "Associativity":  (m >>= f) >>= g  =  m >>= (\x -> f x >>= g)
-
-Why should these laws hold? See http://www.haskell.org/haskellwiki/Monad_Laws
-
-
-Generic monad operations.
--------------------------
-The monad interface is powerful enough to generalize many well-known standard functions, e.g., for lists.
-
-Here are some examples:
-
-fmap :: Monad m => (a -> b) -> m a -> m b
-fmap f m = do x <- m; return (f x)
-
-Note: In Haskell, the typeclass constraint of fmap is "Functor m" instead of "Monad m".
-
-join :: Monad m => m (m a) -> m a
-
-foldM :: Monad m => (a -> b -> m a) -> a -> [b] -> m a
-
-mapM :: Monad m => (a -> m b) -> [a] -> m [b]
-
-Exercise: What is the implementation of these functions? What do these functions do in each of the
-monads you know?
--}
 
 
 {-
 Monad Transformers
 ==================
+Obviously our StateReader monad is in some way a composition of the State monad and the Reader monad.
+This begs the question whether we can also compose the State and the Reader monad.
 
+Obviously we could use, say, the state monad produce values in the reader monad, but that is
+in general not the desired semantics, because the bind and return operator would only go
+through one monad. For instance, "return 42" would not yield \s -> \env -> (42,s).
+
+Hence we need a deeper kind of integration of the monads. This is unfortunately not possible with the
+existing definitions of the monads. What we can do instead is to write _monad transformers_.
+For many monads, we can write a version of this monad that takes another monad as parameter.
+This does not work for every monad (e.g., not for the list monad), and the transformer version
+can also not be derived in an automatic way.
+
+Let us illustrate the idea with the Reader monad. This is what the reader monad transformer looks like:
 -}
-
-
 
 newtype ReaderT r m a = ReaderT { runReaderT :: r -> m a }
 
@@ -603,12 +616,18 @@ askT       = ReaderT return
 
 localT f m = ReaderT $ \r -> runReaderT m (f r)  
 
+{- Monad transformers enable us to compose monads in a chain of transformers terminated with an ordinary monad.
+To navigate within such a chain, it makes sense to have a "lift" function, with which we can lift values
+from the inner monad to the outer monad. -}
+
 lift :: Monad m => m a -> ReaderT r m a 
 lift m = ReaderT $ \_ -> m
 
+{- Using lift, we can define variants of the inner monad functions for the composed monad: -}
 getT = lift getState
 putT = lift . putState
 
+{- Here is eval5 written using the composed monad: -}
 eval5' :: Exp5 -> ReaderT Env5 (State Store5) Value5
 eval5' (Num5 n) = return $ NumV5 n 
 eval5' (Add5 l r) = 
@@ -657,7 +676,9 @@ eval5' (Seq5 e1 e2) =
 main5' :: Exp5 -> (Value5, Store5)
 main5' e = runState (runReaderT (eval5' e) empty) (empty,0)
 
-
+{- Instead of writing two different versions of eval, eval5 and eval5', we could
+also write a single version that abstracts over the different implementations of
+the auxiliary functions as follows: -}
 
 class Monad m => StateReaderMonad r s m | m -> r, m -> s where
     ask   :: m r
@@ -726,6 +747,16 @@ eval5'' (Seq5 e1 e2) =
 {- 
 Monads and Continuations - the Continuation Monad.    
 ==================================================
+
+Monadic style is similar to continuation passing style. This similarity can
+be formalized in two ways: 1) We can define a _continuation monad_, whose
+effect is to CPS-transform a program in monadic style. 2) By choosing
+a suitable space of answers, a CPS interpreter can act as a monad interpreter.
+
+Here we will only elaborate on possibility 1). For 2), we refer to Sec. 3.3
+of the Wadler paper cited in the beginning of this document.
+
+Here is the definition of the continuation monad.
 -}
     
 newtype Cont a b = Cont { runCont :: (b -> a) -> a }
@@ -733,6 +764,10 @@ newtype Cont a b = Cont { runCont :: (b -> a) -> a }
 instance Monad (Cont a) where 
    m >>= f = Cont (\c -> (runCont m) (\b -> (runCont (f b)) c))
    return x = Cont (\c -> c x)
+    
+{- Using the continuation monad, we can even define a variant of Racket's letcc.
+In contrast to Racket, it only works in code that has been lifted to the continuation
+monad, though. -}
     
 callCC :: ((a -> Cont r b) -> Cont r a) -> Cont r a
 callCC f = Cont $ \k -> runCont (f (\a -> Cont $ \_ -> k a)) k
@@ -747,19 +782,19 @@ f n = do
        return $ 10 + 5*a
 
 testf n = runCont (f n) id        
-                                              
-newtype ContT r m a = ContT { runContT :: (a -> m r) -> m r }
 
-instance (Monad m) => Monad (ContT r m) where
-    return a = ContT ($ a)
-    m >>= k  = ContT $ \c -> runContT m (\a -> runContT (k a) c)
+{- Using the continuation monad, we can now write our interpreter for FAE with letcc
+more elegantly. Since we also need environments, we use the reader monad transformer
+to compose reader and continuation monad.
 
+Exercise: Would it also make sense to define a continuation monad transformer and
+compose the two monads the other way around? Does it make a difference? -}
+                                             
 data Exp6 = Num6 Int | Id6 String | Add6 Exp6 Exp6 | Fun6 String Exp6 
           | App6 Exp6 Exp6 | Letcc6 String Exp6 deriving (Show,Eq)
 data Value6 = NumV6 Int | ClosureV6 String Exp6 Env6 
             | ContV6 (Value6  -> Value6) 
 type Env6 = Map String Value6
-
 
 eval6 :: Exp6 -> ReaderT Env6 (Cont Value6) Value6 
 eval6 (Num6 n) = return $ NumV6 n 
