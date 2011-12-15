@@ -1,11 +1,9 @@
 import Data.Map 
 
 
--- An explanations of today's lecture notes are in Sec. 1 and 2 of the following paper:
+-- An explanations of today's lecture notes are also in Sec. 1 and 2 of the following paper:
 -- The essence of functional programming, Philip Wadler,  19'th Symposium on Principles of Programming Languages, ACM Press, Albuquerque, January 1992. 
 -- available at http://homepages.inf.ed.ac.uk/wadler/papers/essence/essence.ps
---
--- These lecture notes are not yet finished; more explanation will be added later on.
 
 
 {-
