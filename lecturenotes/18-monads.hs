@@ -1,5 +1,3 @@
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleContexts, FlexibleInstances #-}
-
 import Data.Map 
 
 
@@ -676,73 +674,6 @@ eval5' (Seq5 e1 e2) =
 main5' :: Exp5 -> (Value5, Store5)
 main5' e = runState (runReaderT (eval5' e) empty) (empty,0)
 
-{- Instead of writing two different versions of eval, eval5 and eval5', we could
-also write a single version that abstracts over the different implementations of
-the auxiliary functions as follows: -}
-
-class Monad m => StateReaderMonad r s m | m -> r, m -> s where
-    ask   :: m r
-    local :: (r -> r) -> m a -> m a
-    get :: m s
-    put :: s -> m ()
-    
-instance StateReaderMonad r s (StateReader r s) where
-  ask = askR'
-  local = localR'
-  get = getS
-  put = putS  
-  
-
-instance StateReaderMonad r s (ReaderT r (State s)) where 
-  ask = askT
-  local = localT
-  get = getT
-  put = putT
-  
-eval5'' :: StateReaderMonad Env5 Store5 m => Exp5 -> m Value5
-eval5'' (Num5 n) = return $ NumV5 n 
-eval5'' (Add5 l r) = 
- do (NumV5 v1) <- eval5'' l
-    (NumV5 v2) <- eval5'' r
-    return (NumV5 (v1+v2))
-eval5'' (Id5 x) = 
-  do env <- ask
-     return (env ! x)
-eval5'' (Fun5 param body) = 
-  do
-    env <- ask
-    return $ ClosureV5 param body env
-eval5''  (App5 f a) = 
-  do
-   (ClosureV5 param body cenv) <- eval5'' f
-   av <- eval5'' a
-   local (\env -> (insert param av cenv)) (eval5'' body)
-eval5'' (If0 e1 e2 e3) =
-  do
-    (NumV5 n) <- eval5'' e1
-    if (n == 0) then eval5'' e2 else eval5'' e3    
-eval5'' (NewBox5 e) = 
-  do
-    ev <- eval5'' e
-    (s,nextFree) <- get
-    put (insert nextFree ev s, nextFree+1)
-    return $ Address5 nextFree
-eval5'' (OpenBox5 e) = 
-  do
-    (Address5 i) <- eval5'' e
-    (s,_) <- get
-    return $ s ! i    
-eval5'' (SetBox5 e1 e2) = 
-  do
-    (Address5 i) <- eval5'' e1
-    e2v <- eval5'' e2
-    (s,nfa) <- get
-    put (insert i e2v s, nfa)
-    return e2v
-eval5'' (Seq5 e1 e2) = 
-  do
-    eval5'' e1
-    eval5'' e2   
 
 {- 
 Monads and Continuations - the Continuation Monad.    
