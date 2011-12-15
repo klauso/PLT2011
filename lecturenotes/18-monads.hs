@@ -606,9 +606,9 @@ Let us illustrate the idea with the Reader monad. This is what the reader monad 
 newtype ReaderT r m a = ReaderT { runReaderT :: r -> m a }
 
 instance (Monad m) => Monad (ReaderT r m) where
-    return a = ReaderT $ \_ -> return a
-    m >>= k  = ReaderT $ \r -> do
-        a <- runReaderT m r
+    return a = ReaderT $ \_ -> return a -- The "return" in the body refers to the return function of m
+    m >>= k  = ReaderT $ \r -> do       -- The do notation in the body refers to m, not ReaderT r m
+        a <- runReaderT m r             -- hence these definitions are not recursive!
         runReaderT (k a) r
   
 askT :: Monad m => ReaderT r m r
