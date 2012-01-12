@@ -53,11 +53,13 @@ Choose an induction principle and verify:
 2. For all `t`,`t'`, if `t -> t'` then `size(t) >= size(t')`.
 
 Note: first ensure yourself that these statements are actually true, and give a
-counter-example and explanation if they are not.
+counter-example and explanation if they are not. You can find the definition of
+size in the lecture notes.
 
 
 Normal forms
 ============
 
-What are the normal forms of the above reduction system? Proof: a term
-`t` is a normal form if and only if `t` is a value.
+What are the normal forms of the above reduction systems (boolean expression in
+task1, lambda calculus in task 2)? Proof: a term `t` is a normal form if and
+only if `t` is a value.
