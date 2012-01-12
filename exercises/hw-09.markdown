@@ -1,0 +1,63 @@
+Homework for the course: 
+Programming Languages and Types.
+
+
+Hand in ...
+
+  ... before Monday, January 16, 8:00 am in the morning.
+  ... by email to pllecture @ informatik ...
+  ... as attached files
+
+You can hand in in small groups. Mention the names of all group
+members in the email and in all source files. Every group member
+should understand the full solution. If possible, meet in person,
+talk, and work together!
+  
+Copy the necessary definitions from the lecture notes.
+
+
+Structural operational semantics
+================================
+
+Consider the following syntax for terms and values:
+
+
+    t ::= true | false | if t then t else t
+        | t and t | t or t
+    v ::= true | false
+    
+Define a reduction relation for `t` that expresses the intuition of
+`and` and `or`. Show how the following program is evaluated
+by your reduction relation:
+
+    if false or (if false then false else true)
+    then if false and true
+         then false
+         else true
+    else true
+
+
+
+Induction
+=========
+
+Let
+
+    lams(x) = 0 
+    lams(\x. t) = 1 + lams(t)
+    lams(t1 t2) = lams(t1) + lams(t2)
+
+Choose an induction principle and verify:
+
+1. `lams(t) <= size(t)` for all `t`.
+2. For all `t`,`t'`, if `t -> t'` then `size(t) >= size(t')`.
+
+Note: first ensure yourself that these statements are actually true, and give a
+counter-example and explanation if they are not.
+
+
+Normal forms
+============
+
+What are the normal forms of the above reduction system? Proof: a term
+`t` is a normal form if and only if `t` is a value.
