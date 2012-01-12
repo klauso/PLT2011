@@ -54,7 +54,7 @@ Choose an induction principle and verify:
 
 Note: first ensure yourself that these statements are actually true, and give a
 counter-example and explanation if they are not. You can find the definition of
-size in the lecture notes.
+`size` in the lecture notes.
 
 
 Normal forms
