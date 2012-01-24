@@ -1,0 +1,44 @@
+Programming Languages and Types
+
+Lab Session, January 16, 2012
+
+
+
+Type safety
+==========
+
+Consider the reduction and type system for arithmetics and booleans from last
+week. We want to proof that this type system is sound, however, to make things
+more interesting let's add the following construct.
+
+    t ::= error
+
+    error op t -> error,  for op in {and, or}
+    t op error -> error,  for op in {and, or}
+    f error -> error,     for f  in {succ, pred, iszero}
+
+To support `error`, the type system needs to be extended as well. How?
+
+Verify the soundness of the resulting type system.
+
+
+Termination
+===========
+
+Discuss: is it possible to define a sound type system in which only terminating
+programs are well-typed?
+
+
+Recursion in the STLC
+=====================
+
+We introduced recursion into the STLC by means of a primitive `fix`
+operator. Why have we not integrated recursion by implementing the `Y` or
+`Z` fixpoint combinator instead?
+
+
+
+Extensions of the simply typed lambda calculus
+==============
+
+Explain the difference between tuples, variants, records and sums.
