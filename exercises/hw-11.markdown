@@ -1,0 +1,55 @@
+Homework for the course: 
+Programming Languages and Types.
+
+
+Hand in ...
+
+  ... before Monday, January 30, 8:00 am in the morning.
+  ... by email to pllecture @ informatik ...
+  ... as attached files
+
+You can hand in in small groups. Mention the names of all group
+members in the email and in all source files. Every group member
+should understand the full solution. If possible, meet in person,
+talk, and work together!
+  
+
+Subtyping
+=========
+
+Reflect and discuss the following:
+
+1. the subsumption rule
+2. covariant and contra-variant subtyping
+3. subtyping of records
+
+
+Algorithmic subtyping
+=====================
+
+Explain the characteristics of algorithmic subtyping. Why do we need algorithmic
+subtyping? What do we need joins and meets for?
+
+
+Algorithmic type checking at work
+=================================
+
+Implement an algorithm that, given a program and a type, checks whether the
+given program is of the given type. Support the following language constructs:
+
+1. simply typed lambda calculus
+2. pairs
+3. records
+4. subtyping
+
+Perform extensive testing to make sure your type checker works as
+expected. Specifically, write test cases that challenge the type checker with
+respect to progress and preservation (for example, try to type check stuck
+terms).
+
+Hints:
+
+* You need type annotations for variables bound by lambda expressions. These
+  should be part of your object language (you don't need to infer them).
+* Your type checker does not need to support classes or objects.
+* Check the Pierce's book or the slides.
